@@ -1,0 +1,55 @@
+### 無/有寬限期，單一利率
+POST http://localhost:8080/loan/calculate
+Content-Type: application/json
+
+{
+  "loanAmount": 200,
+  "loanPeriod": 36,
+  "isSingleRate": true,
+  "interestRate": 2,
+  "gracePeriod": 3
+}
+
+<> 2024-05-29T003119.200.json
+<> 2024-05-29T002002.200.json
+<> 2024-05-29T000720.200.json
+<> 2024-05-28T234343.200.json
+<> 2024-05-28T213645.200.json
+<> 2024-05-28T213601.200.json
+<> 2024-05-28T212629.200.json
+<> 2024-05-28T212548.200.json
+<> 2024-05-28T212357.200.json
+<> 2024-05-28T212312.200.json
+<> 2024-05-28T212245.200.json
+<> 2024-05-28T204450.200.json
+<> 2024-05-28T204215.200.json
+<> 2024-05-28T191414.200.json
+<> 2024-05-28T191343.200.json
+<> 2024-05-28T190127.500.json
+<> 2024-05-28T190052.200.json
+<> 2024-05-28T185809.200.json
+
+### 無/有寬限期，多段式利率
+POST http://localhost:8080/loan/calculate
+Content-Type: application/json
+
+{
+  "loanAmount": 100,
+  "loanPeriod": 36,
+  "isSingleRate": false,
+  "ratePeriods": [
+    {"rate": 2,"months": 12},
+    {"rate": 3, "months": 24}
+  ],
+  "gracePeriod": 0
+}
+
+<> 2024-05-28T212800.200.json
+<> 2024-05-28T212700.200.json
+<> 2024-05-28T212039.200.json
+<> 2024-05-28T212014.200.json
+<> 2024-05-28T211725.200.json
+<> 2024-05-28T211611.200.json
+<> 2024-05-28T210550.200.json
+<> 2024-05-28T204759.200.json
+<> 2024-05-28T204706.200.json
