@@ -12,6 +12,7 @@ data class LoanRequest(
     val interestRate: Double?, // 單一利率
     val ratePeriods: List<RatePeriod>?, // N段式利率
     val gracePeriod: Int, // 寬限期(單位月)
+    val relatedFees: Double // 新增的相關費用
 )
 
 data class Payment(
@@ -24,7 +25,7 @@ data class Payment(
 )
 
 data class LoanResponse(
-    val loanAmount: Double, // 貸款金額(單位萬元)
+    val loanAmount: Int, // 貸款金額(單位萬元)
     val totalApr: Double, // 總費用年百分率
     val payments: List<Payment> // 每期還款資訊
 )

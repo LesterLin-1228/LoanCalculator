@@ -4,6 +4,9 @@ import org.example.loancalculator.model.LoanRequest
 import org.example.loancalculator.model.LoanResponse
 import org.example.loancalculator.model.Payment
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
+import java.math.RoundingMode
+import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.round
 
@@ -17,6 +20,8 @@ class LoanCalculatorService {
         val totalPeriod = request.loanPeriod
         // 寬限期
         val gracePeriod = request.gracePeriod
+        // 相關費用
+        val relatedFees = request.relatedFees
         // 初始化本金餘額
         var remainingPrincipal = loanAmountInDollars
         // 初始化累計利息
@@ -51,7 +56,9 @@ class LoanCalculatorService {
                         period = period,
                         principalForPeriod = round(principalForPeriod).toInt(),
                         interestForPeriod = round(interestForPeriod).toInt(),
-                        monthlyPayment = if (period <= gracePeriod) round(interestForPeriod).toInt() else round(monthlyPayment).toInt(),
+                        monthlyPayment = if (period <= gracePeriod) round(interestForPeriod).toInt() else round(
+                            monthlyPayment
+                        ).toInt(),
                         remainingPrincipal = round(remainingPrincipal).toInt(),
                         totalInterestAccrued = round(totalInterestAccrued).toInt()
                     )
@@ -92,7 +99,8 @@ class LoanCalculatorService {
                 } else {
                     // 如果當前期數為寬限期後的第一期或當前利率段已經到期並切換到第二段利率，就重新計算 monthlyPayment
                     if (period == gracePeriod + 1 || remainingMonthsInSegment == ratePeriods[currentRateIndex].months) {
-                        monthlyPayment = calculateMonthlyPayment(remainingPrincipal, monthlyRate, totalPeriod - period + 1)
+                        monthlyPayment =
+                            calculateMonthlyPayment(remainingPrincipal, monthlyRate, totalPeriod - period + 1)
                     }
                     principalForPeriod = monthlyPayment - interestForPeriod
                     remainingPrincipal -= principalForPeriod
@@ -116,10 +124,13 @@ class LoanCalculatorService {
             }
         }
 
+        // 計算總費用年百分率
+        val totalApr = calculateApr(loanAmountInDollars, relatedFees, payments)
+
         // 返回最終的貸款回應
         return LoanResponse(
-            loanAmount = request.loanAmount,
-            totalApr = 0.0,
+            loanAmount = request.loanAmount.toInt(),
+            totalApr = totalApr,
             payments = payments
         )
     }
@@ -132,5 +143,42 @@ class LoanCalculatorService {
     ): Double {
         // 使用等額本息公式計算每月還款金額
         return loanAmount * monthlyRate / (1 - (1 + monthlyRate).pow(-periods))
+    }
+
+    // 使用牛頓法計算總費用年百分率
+    private fun calculateApr(
+        loanAmount: Double,
+        relatedFees: Double,
+        payments: List<Payment>,
+    ): Double {
+        var apr = 0.1 // 初始估計的 APR 設定為10%
+        val epsilon = 1e-6 // 誤差容許範圍
+        var iteration = 0 // 迭代次數
+        val maxIterations = 1000 // 最大迭代次數限制
+
+        while (iteration < maxIterations) {
+            var f = relatedFees
+            var fPrime = 0.0 // 初始函數導數值
+
+            // 計算函數值和函數導數值
+            for (payment in payments) {
+                // 對每期的付款計算折現後的付款金額，並更新 f 和 fPrime
+                val discountedPayment = payment.monthlyPayment / (1 + apr / 12).pow(payment.period)
+                f += discountedPayment
+                fPrime -= payment.period * discountedPayment / (1 + apr / 12)
+            }
+
+            // 如果函數值與貸款金額的差距小於誤差範圍，則返回計算結果
+            if (abs(f - loanAmount) < epsilon) {
+                // 用 BigDecimal 來處理小數的進位，避免誤差
+                return BigDecimal(apr * 100).setScale(2, RoundingMode.HALF_UP).toDouble() // 四捨五入為百分比並取到小數點第二位
+            }
+
+            // 使用牛頓法計算下一次迭代的APR值
+            apr -= (f - loanAmount) / fPrime
+            iteration++
+        }
+
+        return BigDecimal(apr * 100).setScale(2, RoundingMode.HALF_UP).toDouble()
     }
 }
