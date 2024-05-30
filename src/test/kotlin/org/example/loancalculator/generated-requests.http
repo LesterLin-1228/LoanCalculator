@@ -34,7 +34,7 @@ Content-Type: application/json
   "loanPeriod": 36,
   "isSingleRate": true,
   "interestRate": 2,
-  "gracePeriod": 0,
+  "gracePeriod": 3,
   "relatedFees": 0
 }
 
