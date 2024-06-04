@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: sa
+      MYSQL_DATABASE: loanDb
+      MYSQL_USER: sa
+      MYSQL_PASSWORD: sa
+    ports:
+      - "3306:3306"

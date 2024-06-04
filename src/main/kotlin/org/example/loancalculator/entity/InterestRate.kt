@@ -7,6 +7,6 @@ import java.time.LocalDate
 @Entity
 data class InterestRate(
     @Id
-    val data: LocalDate = LocalDate.now(),
-    val baseRate: Double = 3.2
+    val date: LocalDate = LocalDate.now(),
+    val baseRate: Double = 2.0
 )
