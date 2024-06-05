@@ -1,12 +1,19 @@
 package org.example.loancalculator.entity
 
+import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
+import org.hibernate.annotations.Comment
 import java.time.LocalDate
 
 @Entity
-data class InterestRate(
+class InterestRate(
     @Id
-    val date: LocalDate = LocalDate.now(),
-    val baseRate: Double = 2.0
+    @Column(nullable = false)
+    @Comment("利率日期")
+    val date: LocalDate,
+
+    @Column(nullable = false)
+    @Comment("基礎利率")
+    val baseRate: Double
 )

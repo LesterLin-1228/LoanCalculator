@@ -1,47 +1,42 @@
 package org.example.loancalculator.entity
 
 import jakarta.persistence.*
-import org.jetbrains.annotations.NotNull
+import org.hibernate.annotations.Comment
 import java.time.LocalDate
 
 @Entity
-data class Loan(
+class Loan(
     @Id
-    val account: String = "",
+    val account: String,
 
-    @field:NotNull
     @Column(nullable = false)
-    val startDate: LocalDate = LocalDate.now(),
+    val startDate: LocalDate,
 
-    @field:NotNull
     @Column(nullable = false)
-    val endDate: LocalDate = LocalDate.now(),
+    val endDate: LocalDate,
 
-    @field:NotNull
+    @Comment("每月還款日")
     @Column(nullable = false)
-    val paymentDueDay: Int = 0,
+    val paymentDueDay: Int,
 
-    @field:NotNull
     @Column(nullable = false)
-    val remainingPrincipal: Double = 0.0,
+    val remainingPrincipal: Double,
 
-    val totalRepayment: Double = 0.0,
-
-    val totalPrincipalRepaid: Double = 0.0,
-
-    val totalInterestRepaid: Double = 0.0,
-
-    @field:NotNull
+    @Comment("已繳總金額(已繳本金+已繳總利息)")
     @Column(nullable = false)
-    val principalAmount: Double = 0.0,
+    val totalRepayment: Double,
 
-    @field:NotNull
+    @Comment("已繳本金")
     @Column(nullable = false)
-    val termMonths: Int = 0,
+    val totalPrincipalRepaid: Double,
 
-    @OneToMany(mappedBy = "loan",cascade = [CascadeType.ALL], orphanRemoval = true)
-    val interestRates: List<LoanInterestRate> = mutableListOf(),
+    @Comment("已繳總利息")
+    @Column(nullable = false)
+    val totalInterestRepaid: Double,
 
-    @OneToMany(mappedBy = "loan",cascade = [CascadeType.ALL], orphanRemoval = true)
-    val repaymentHistory: List<RepaymentRecord> = mutableListOf()
+    @Column(nullable = false)
+    val loanAmount: Double,
+
+    @Column(nullable = false)
+    val loanTerm: Int,
 )

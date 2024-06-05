@@ -1,31 +1,36 @@
 package org.example.loancalculator.entity
 
 import jakarta.persistence.*
-import org.jetbrains.annotations.NotNull
+import org.hibernate.annotations.Comment
+import java.time.LocalDate
 
 @Entity
-data class RepaymentRecord(
+class RepaymentRecord(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    val id: Long,
 
     @ManyToOne
     @JoinColumn(name = "loan_account")
-    val loan: Loan? = null,
+    val loan: Loan,
 
-    @field:NotNull
+    @Comment("還款金額")
     @Column(nullable = false)
-    val repayment: Double = 0.0,
+    val repayment: Double,
 
-    @field:NotNull
+    @Comment("還款本金")
     @Column(nullable = false)
-    val principalRepaid: Double = 0.0,
+    val principalRepaid: Double,
 
-    @field:NotNull
+    @Comment("還款利息")
     @Column(nullable = false)
-    val interestRepaid: Double = 0.0,
+    val interestRepaid: Double,
 
-    @field:NotNull
+    @Comment("當下利率")
     @Column(nullable = false)
-    val currentRate: Double = 0.0,
+    val currentRate: Double,
+
+    @Comment("還款日期")
+    @Column(nullable = false)
+    val repaymentDate: LocalDate
 )

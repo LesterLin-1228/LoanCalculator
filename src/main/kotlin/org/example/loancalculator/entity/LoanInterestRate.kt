@@ -1,24 +1,24 @@
 package org.example.loancalculator.entity
 
 import jakarta.persistence.*
-import org.jetbrains.annotations.NotNull
+import org.hibernate.annotations.Comment
 import java.time.LocalDate
 
 @Entity
-data class LoanInterestRate(
+class LoanInterestRate(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    val id: Long,
 
     @ManyToOne
     @JoinColumn(name = "loan_account")
-    val loan: Loan? = null,
+    val loan: Loan,
 
-    @field:NotNull
+    @Comment("利率起始日")
     @Column(nullable = false)
-    val rateStartDate: LocalDate = LocalDate.now(),
+    val rateStartDate: LocalDate,
 
-    @field:NotNull
+    @Comment("利率差(最終利率-基礎利率)")
     @Column(nullable = false)
-    val rateDifference: Double = 0.5
+    val rateDifference: Double
 )
