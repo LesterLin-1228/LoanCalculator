@@ -8,11 +8,10 @@ import java.time.LocalDate
 class LoanInterestRate(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long,
+    val id: Long? = null,
 
-    @ManyToOne
-    @JoinColumn(name = "loan_account")
-    val loan: Loan,
+    @Column(nullable = false)
+    val loanAccount: String,
 
     @Comment("利率起始日")
     @Column(nullable = false)
@@ -20,5 +19,5 @@ class LoanInterestRate(
 
     @Comment("利率差(最終利率-基礎利率)")
     @Column(nullable = false)
-    val rateDifference: Double
+    val rateDifference: Double,
 )

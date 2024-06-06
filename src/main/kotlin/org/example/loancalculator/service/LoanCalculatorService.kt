@@ -14,7 +14,7 @@ class LoanCalculatorService {
 
     fun calculateLoan(request: LoanRequest): LoanResponse {
         // 將貸款金額轉換為元
-        val loanAmountInDollars = roundToInteger(request.loanAmount * 10000)
+        val loanAmountInDollars = request.loanAmount * 10000
         // 總期數
         val totalPeriod = request.loanPeriod
         // 寬限期
@@ -137,7 +137,7 @@ class LoanCalculatorService {
 
         // 返回最終的貸款回應
         return LoanResponse(
-            loanAmount = request.loanAmount.toInt(),
+            loanAmount = request.loanAmount,
             totalApr = totalApr,
             payments = payments
         )
@@ -156,7 +156,7 @@ class LoanCalculatorService {
     // 使用牛頓法計算總費用年百分率
     private fun calculateApr(
         loanAmount: Int,
-        relatedFees: Double,
+        relatedFees: Int,
         payments: List<Payment>,
     ): Double {
         var apr = 0.1 // 初始估計的 APR 設定為10%
@@ -171,7 +171,7 @@ class LoanCalculatorService {
             // 計算函數值和函數導數值
             for (payment in payments) {
                 // 對每期的付款計算折現後的付款金額，並更新 f 和 fPrime
-                val discountedPayment = payment.monthlyPayment / (1 + apr / 12).pow(payment.period)
+                val discountedPayment = payment.monthlyPayment / (1 + apr / 12).pow(payment.period).toInt()
                 f += discountedPayment
                 fPrime -= payment.period * discountedPayment / (1 + apr / 12)
             }

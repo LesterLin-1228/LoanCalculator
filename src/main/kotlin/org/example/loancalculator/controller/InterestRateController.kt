@@ -1,8 +1,8 @@
 package org.example.loancalculator.controller
 
-import jakarta.validation.Valid
-import org.example.loancalculator.dto.loanDto
-import org.example.loancalculator.service.LoanService
+import org.example.loancalculator.dto.InterestRateDto
+import org.example.loancalculator.entity.InterestRate
+import org.example.loancalculator.service.InterestRateService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/loan")
-class LoanController(@Autowired private val loanService: LoanService) {
+@RequestMapping("/interest-rate")
+class InterestRateController(@Autowired private val interestRateService: InterestRateService) {
 
     @PostMapping
-    fun createLoan(@RequestBody @Valid loanDto: loanDto): ResponseEntity<String> {
-        val result = loanService.createLoan(loanDto)
+    fun createDefaultInterestRate(@RequestBody interestRateDto: InterestRateDto): ResponseEntity<String> {
+        val result = interestRateService.createDefaultInterestRate(interestRateDto)
         return ResponseEntity(result.message, result.status)
     }
 }

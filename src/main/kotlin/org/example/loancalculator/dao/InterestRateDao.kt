@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 
 interface InterestRateDao : JpaRepository<InterestRate, LocalDate> {
+    fun findFirstByOrderByDateDesc(): InterestRate?
 }
