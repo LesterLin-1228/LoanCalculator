@@ -17,18 +17,18 @@ class LoanInfoCalculatorServiceTest {
     @Test
     fun `test calculateLoan with single rate`() {
         val request = LoanRequest(
-            loanAmount = 100.0,
+            loanAmount = 100,
             loanPeriod = 36,
             isSingleRate = true,
             interestRate = 1.0,
             ratePeriods = null,
             gracePeriod = 3,
-            relatedFees = 10000.0
+            relatedFees = 10000
         )
 
         val response = loanCalculatorService.calculateLoan(request)
 
-        assertEquals(request.loanAmount.toInt(), response.loanAmount)
+        assertEquals(request.loanAmount, response.loanAmount)
         assertEquals(1.61, response.totalApr)
 
         // 驗證第1期數據
@@ -63,7 +63,7 @@ class LoanInfoCalculatorServiceTest {
     @Test
     fun `test calculateLoan with segmented rate`() {
         val request = LoanRequest(
-            loanAmount = 100.0,
+            loanAmount = 100,
             loanPeriod = 36,
             isSingleRate = false,
             interestRate = null,
@@ -72,12 +72,12 @@ class LoanInfoCalculatorServiceTest {
                 RatePeriod(rate = 3.0, months = 24),
             ),
             gracePeriod = 3,
-            relatedFees = 10000.0
+            relatedFees = 10000
         )
 
         val response = loanCalculatorService.calculateLoan(request)
 
-        assertEquals(request.loanAmount.toInt(), response.loanAmount)
+        assertEquals(request.loanAmount, response.loanAmount)
         assertEquals(3.06,response.totalApr)
 
         // 驗證第1期數據

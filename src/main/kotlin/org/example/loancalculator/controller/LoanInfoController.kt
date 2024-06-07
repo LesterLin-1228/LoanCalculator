@@ -2,8 +2,8 @@ package org.example.loancalculator.controller
 
 import jakarta.validation.Valid
 import org.example.loancalculator.dto.LoanInfoDto
-import org.example.loancalculator.result.LoanDetailsResult
-import org.example.loancalculator.result.Result
+import org.example.loancalculator.result.LoanDetailsResponse
+import org.example.loancalculator.result.Response
 import org.example.loancalculator.service.LoanInfoService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
@@ -25,7 +25,7 @@ class LoanInfoController(@Autowired private val loanInfoService: LoanInfoService
     }
 
     @GetMapping("/{loanAccount}")
-    fun getLoanDetails(@PathVariable loanAccount: String): ResponseEntity<Result<LoanDetailsResult>> {
+    fun getLoanDetails(@PathVariable loanAccount: String): ResponseEntity<Response<LoanDetailsResponse>> {
         val result = loanInfoService.getLoanDetails(loanAccount)
         return ResponseEntity(result, result.status)
     }

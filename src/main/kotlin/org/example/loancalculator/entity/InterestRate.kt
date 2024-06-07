@@ -14,6 +14,6 @@ class InterestRate(
     val date: LocalDate,
 
     @Column(nullable = false)
-    @Comment("基礎利率")
+    @Comment("基礎利率(單位:%)")
     val baseRate: Double
 )

@@ -35,7 +35,7 @@ class LoanInfo(
     @Column(nullable = false)
     val totalInterestRepaid: Int = 0,
 
-    @Comment("貸款總額(單位:百萬元)")
+    @Comment("貸款總額(單位:元)")
     @Column(nullable = false)
     val loanAmount: Int,
 

@@ -6,4 +6,5 @@ import java.time.LocalDate
 
 interface InterestRateDao : JpaRepository<InterestRate, LocalDate> {
     fun findFirstByOrderByDateDesc(): InterestRate?
+    fun existsByDate(date: LocalDate): Boolean
 }

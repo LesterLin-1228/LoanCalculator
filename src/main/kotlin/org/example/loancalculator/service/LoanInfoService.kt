@@ -6,8 +6,8 @@ import org.example.loancalculator.dto.LoanInfoDto
 import org.example.loancalculator.entity.LoanInfo
 import org.example.loancalculator.entity.LoanInterestRate
 import org.example.loancalculator.model.LoanRequest
-import org.example.loancalculator.result.LoanDetailsResult
-import org.example.loancalculator.result.Result
+import org.example.loancalculator.result.LoanDetailsResponse
+import org.example.loancalculator.result.Response
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -18,13 +18,13 @@ class LoanInfoService(
     @Autowired private val loanInfoDao: LoanInfoDao,
     @Autowired private val loanInterestRateDao: LoanInterestRateDao,
     @Autowired private val interestRateService: InterestRateService,
-    private val loanCalculatorService: LoanCalculatorService,
+    @Autowired private val loanCalculatorService: LoanCalculatorService,
 ) {
 
-    fun createLoan(loanInfoDto: LoanInfoDto): Result<Any?> {
+    fun createLoan(loanInfoDto: LoanInfoDto): Response<String> {
         val existingLoanInfo = loanInfoDao.findByLoanAccount(loanInfoDto.loanAccount)
         return if (existingLoanInfo != null) {
-            Result("帳號重複", HttpStatus.CONFLICT)
+            Response("帳號重複", HttpStatus.CONFLICT)
         } else {
             val startDate = LocalDate.now()
             val endDate = startDate.plusMonths(loanInfoDto.loanTerm.toLong())
@@ -43,16 +43,16 @@ class LoanInfoService(
             // 儲存貸款利率
             val loanInterestRate = LoanInterestRate(
                 loanAccount = saveLoan.loanAccount,
-                rateStartDate = loanInfoDto.rateStartDate,
+                rateStartDate = startDate,
                 rateDifference = loanInfoDto.rateDifference
             )
             loanInterestRateDao.save(loanInterestRate)
 
-            Result("成功建立", HttpStatus.CREATED)
+            Response("成功建立", HttpStatus.CREATED)
         }
     }
 
-    fun getLoanDetails(loanAccount: String): Result<LoanDetailsResult> {
+    fun getLoanDetails(loanAccount: String): Response<LoanDetailsResponse> {
         val loanInfo = loanInfoDao.findByLoanAccount(loanAccount) ?: throw Exception("貸款帳號不存在")
 
         // 獲取最新的基礎利率
@@ -62,7 +62,7 @@ class LoanInfoService(
             loanInterestRateDao.findByLoanAccount(loanAccount)?.rateDifference ?: throw Exception("查無利率差")
 
         val loanRequest = LoanRequest(
-            loanAmount = loanInfo.loanAmount,
+            loanAmount = loanInfo.loanAmount / 10000,
             loanPeriod = loanInfo.loanTerm,
             isSingleRate = true,
             interestRate = baseRate + rateDifference,
@@ -87,12 +87,12 @@ class LoanInfoService(
             remainingPrincipal -= payment.principalForPeriod
         }
 
-        val loanDetailsResult =  LoanDetailsResult(
+        val loanDetailsResponse = LoanDetailsResponse(
             remainingPrincipal = loanInfo.remainingPrincipal,
             nextRepayment = nextRepayment ?: throw Exception("查無下期還款金額")
         )
 
-        return Result("成功獲取貸款詳情", HttpStatus.OK, loanDetailsResult)
+        return Response("成功獲取貸款詳情", HttpStatus.OK, loanDetailsResponse)
     }
 
 }

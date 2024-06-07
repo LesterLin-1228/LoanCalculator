@@ -1,6 +1,6 @@
 package org.example.loancalculator.result
 
-data class LoanDetailsResult(
+data class LoanDetailsResponse(
     val remainingPrincipal: Int,
     val nextRepayment: Int
 )
