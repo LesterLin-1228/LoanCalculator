@@ -17,23 +17,23 @@ class LoanInfo(
 
     @Comment("每月還款日")
     @Column(nullable = false)
-    val paymentDueDay: Int,
+    val repaymentDueDay: Int,
 
-    @Comment("剩餘本金(起始為貸款金額)")
+    @Comment("本金餘額(起始為貸款金額)")
     @Column(nullable = false)
-    var remainingPrincipal: Int,
+    var principalBalance: Int,
 
     @Comment("已繳總金額(已繳本金+已繳總利息)")
     @Column(nullable = false)
-    val totalRepayment: Int = 0,
+    var totalAmountRepaid: Int = 0,
 
-    @Comment("已繳本金")
+    @Comment("已繳總本金")
     @Column(nullable = false)
-    val totalPrincipalRepaid: Int = 0,
+    var totalPrincipalRepaid: Int = 0,
 
     @Comment("已繳總利息")
     @Column(nullable = false)
-    val totalInterestRepaid: Int = 0,
+    var totalInterestRepaid: Int = 0,
 
     @Comment("貸款總額(單位:元)")
     @Column(nullable = false)

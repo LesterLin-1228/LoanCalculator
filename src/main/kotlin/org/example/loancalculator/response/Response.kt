@@ -1,4 +1,4 @@
-package org.example.loancalculator.result
+package org.example.loancalculator.response
 
 import org.springframework.http.HttpStatus
 

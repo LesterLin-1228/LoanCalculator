@@ -3,7 +3,7 @@ package org.example.loancalculator.service
 import org.example.loancalculator.dao.InterestRateDao
 import org.example.loancalculator.dto.InterestRateDto
 import org.example.loancalculator.entity.InterestRate
-import org.example.loancalculator.result.Response
+import org.example.loancalculator.response.Response
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service

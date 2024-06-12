@@ -66,7 +66,7 @@ class LoanCalculatorService {
                         principalForPeriod = principalForPeriod,
                         interestForPeriod = interestForPeriod,
                         monthlyPayment = if (period <= gracePeriod) interestForPeriod else monthlyPayment,
-                        remainingPrincipal = remainingPrincipal,
+                        principalBalance = remainingPrincipal,
                         totalInterestAccrued = totalInterestAccrued
                     )
                 )
@@ -123,7 +123,7 @@ class LoanCalculatorService {
                         principalForPeriod = principalForPeriod,
                         interestForPeriod = interestForPeriod,
                         monthlyPayment = monthlyPayment,
-                        remainingPrincipal = remainingPrincipal,
+                        principalBalance = remainingPrincipal,
                         totalInterestAccrued = totalInterestAccrued
                     )
                 )
@@ -164,14 +164,17 @@ class LoanCalculatorService {
         var iteration = 0 // 迭代次數
         val maxIterations = 1000 // 最大迭代次數限制
 
+        // 將 relatedFees 轉換為 Double
+        val fees = relatedFees.toDouble()
+
         while (iteration < maxIterations) {
-            var f = relatedFees
+            var f = fees
             var fPrime = 0.0 // 初始函數導數值
 
             // 計算函數值和函數導數值
             for (payment in payments) {
                 // 對每期的付款計算折現後的付款金額，並更新 f 和 fPrime
-                val discountedPayment = payment.monthlyPayment / (1 + apr / 12).pow(payment.period).toInt()
+                val discountedPayment = payment.monthlyPayment / (1 + apr / 12).pow(payment.period)
                 f += discountedPayment
                 fPrime -= payment.period * discountedPayment / (1 + apr / 12)
             }

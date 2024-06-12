@@ -6,8 +6,9 @@ import org.example.loancalculator.dto.LoanInfoDto
 import org.example.loancalculator.entity.LoanInfo
 import org.example.loancalculator.entity.LoanInterestRate
 import org.example.loancalculator.model.LoanRequest
-import org.example.loancalculator.result.LoanDetailsResponse
-import org.example.loancalculator.result.Response
+import org.example.loancalculator.model.LoanResponse
+import org.example.loancalculator.response.LoanDetailsResponse
+import org.example.loancalculator.response.Response
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -33,8 +34,8 @@ class LoanInfoService(
                 loanAccount = loanInfoDto.loanAccount,
                 startDate = startDate,
                 endDate = endDate,
-                paymentDueDay = startDate.dayOfMonth,
-                remainingPrincipal = loanInfoDto.loanAmount,
+                repaymentDueDay = startDate.dayOfMonth,
+                principalBalance = loanInfoDto.loanAmount,
                 loanAmount = loanInfoDto.loanAmount,
                 loanTerm = loanInfoDto.loanTerm
             )
@@ -55,11 +56,35 @@ class LoanInfoService(
     fun getLoanDetails(loanAccount: String): Response<LoanDetailsResponse> {
         val loanInfo = loanInfoDao.findByLoanAccount(loanAccount) ?: throw Exception("貸款帳號不存在")
 
+        val loanResponse = prepareLoanRequest(loanInfo)
+
+        // 初始化剩餘本金和下期還款金額
+        var principalBalance = loanInfo.loanAmount
+        var nextRepayment: Int? = null
+
+        // 遍歷所有期數的還款資訊
+        for (payment in loanResponse.payments) {
+            if (principalBalance == loanInfo.principalBalance) {
+                nextRepayment = payment.monthlyPayment
+                break
+            }
+            principalBalance -= payment.principalForPeriod
+        }
+
+        val loanDetailsResponse = LoanDetailsResponse(
+            principalBalance = loanInfo.principalBalance,
+            nextRepayment = nextRepayment ?: throw Exception("查無下期還款金額")
+        )
+
+        return Response("成功獲取貸款詳情", HttpStatus.OK, loanDetailsResponse)
+    }
+
+    private fun prepareLoanRequest(loanInfo: LoanInfo): LoanResponse {
         // 獲取最新的基礎利率
         val baseRate = interestRateService.getLatestInterestRate()?.baseRate ?: throw Exception("查無最新基礎利率")
         // 獲取利率差
         val rateDifference =
-            loanInterestRateDao.findByLoanAccount(loanAccount)?.rateDifference ?: throw Exception("查無利率差")
+            loanInterestRateDao.findByLoanAccount(loanInfo.loanAccount)?.rateDifference ?: throw Exception("查無利率差")
 
         val loanRequest = LoanRequest(
             loanAmount = loanInfo.loanAmount / 10000,
@@ -70,29 +95,7 @@ class LoanInfoService(
             ratePeriods = null,
             relatedFees = 0
         )
-
-        // 計算還款資訊
-        val loanResponse = loanCalculatorService.calculateLoan(loanRequest)
-
-        // 初始化剩餘本金和下期還款金額
-        var remainingPrincipal = loanInfo.loanAmount
-        var nextRepayment: Int? = null
-
-        // 遍歷所有期數的還款資訊
-        for (payment in loanResponse.payments) {
-            if (remainingPrincipal == loanInfo.remainingPrincipal) {
-                nextRepayment = payment.monthlyPayment
-                break
-            }
-            remainingPrincipal -= payment.principalForPeriod
-        }
-
-        val loanDetailsResponse = LoanDetailsResponse(
-            remainingPrincipal = loanInfo.remainingPrincipal,
-            nextRepayment = nextRepayment ?: throw Exception("查無下期還款金額")
-        )
-
-        return Response("成功獲取貸款詳情", HttpStatus.OK, loanDetailsResponse)
+        // 傳回計算後的貸款資訊
+        return loanCalculatorService.calculateLoan(loanRequest)
     }
-
 }

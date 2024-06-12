@@ -18,8 +18,8 @@ class InterestRateController(@Autowired private val interestRateService: Interes
 
     @PostMapping
     fun createInterestRate(@RequestBody interestRateDto: InterestRateDto): ResponseEntity<String> {
-        val result = interestRateService.createInterestRate(interestRateDto)
-        return ResponseEntity(result.message, result.status)
+        val response = interestRateService.createInterestRate(interestRateDto)
+        return ResponseEntity(response.message, response.status)
     }
 
     @GetMapping("/latest")

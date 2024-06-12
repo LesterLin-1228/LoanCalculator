@@ -2,6 +2,7 @@ package org.example.loancalculator.entity
 
 import jakarta.persistence.*
 import org.hibernate.annotations.Comment
+import java.time.LocalDate
 
 @Entity
 class RepaymentRecord(
@@ -14,7 +15,7 @@ class RepaymentRecord(
 
     @Comment("還款金額")
     @Column(nullable = false)
-    val repayment: Int,
+    val repaymentAmount: Int,
 
     @Comment("還款本金")
     @Column(nullable = false)
@@ -26,5 +27,9 @@ class RepaymentRecord(
 
     @Comment("當下利率(基礎利率+利率差)")
     @Column(nullable = false)
-    val currentRate: Double,
+    val currentInterestRate: Double,
+
+    @Comment("還款日")
+    @Column(nullable = false)
+    val repaymentDate: LocalDate
 )

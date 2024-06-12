@@ -37,7 +37,7 @@ class LoanInfoCalculatorServiceTest {
         assertEquals(0, paymentFirst.principalForPeriod)
         assertEquals(833, paymentFirst.interestForPeriod)
         assertEquals(833, paymentFirst.monthlyPayment)
-        assertEquals(1000000, paymentFirst.remainingPrincipal)
+        assertEquals(1000000, paymentFirst.principalBalance)
         assertEquals(833, paymentFirst.totalInterestAccrued)
 
         // 驗證過寬限期後的第1期數據
@@ -46,7 +46,7 @@ class LoanInfoCalculatorServiceTest {
         assertEquals(29901, paymentAfterGrace.principalForPeriod)
         assertEquals(833, paymentAfterGrace.interestForPeriod)
         assertEquals(30734, paymentAfterGrace.monthlyPayment)
-        assertEquals(970099, paymentAfterGrace.remainingPrincipal)
+        assertEquals(970099, paymentAfterGrace.principalBalance)
         assertEquals(3332, paymentAfterGrace.totalInterestAccrued)
 
         // 驗證最後一期數據
@@ -55,7 +55,7 @@ class LoanInfoCalculatorServiceTest {
         assertEquals(30716, paymentLast.principalForPeriod)
         assertEquals(26, paymentLast.interestForPeriod)
         assertEquals(30742, paymentLast.monthlyPayment)
-        assertEquals(0, paymentLast.remainingPrincipal)
+        assertEquals(0, paymentLast.principalBalance)
         assertEquals(16729, paymentLast.totalInterestAccrued)
 
     }
@@ -86,7 +86,7 @@ class LoanInfoCalculatorServiceTest {
         assertEquals(0, paymentFirst.principalForPeriod)
         assertEquals(1667, paymentFirst.interestForPeriod)
         assertEquals(1667, paymentFirst.monthlyPayment)
-        assertEquals(1000000, paymentFirst.remainingPrincipal)
+        assertEquals(1000000, paymentFirst.principalBalance)
         assertEquals(1667, paymentFirst.totalInterestAccrued)
 
         // 驗證過寬限期後的第1期數據
@@ -95,7 +95,7 @@ class LoanInfoCalculatorServiceTest {
         assertEquals(29502, paymentAfterGrace.principalForPeriod)
         assertEquals(1667, paymentAfterGrace.interestForPeriod)
         assertEquals(31169, paymentAfterGrace.monthlyPayment)
-        assertEquals(970498, paymentAfterGrace.remainingPrincipal)
+        assertEquals(970498, paymentAfterGrace.principalBalance)
         assertEquals(6668, paymentAfterGrace.totalInterestAccrued)
 
         // 驗證分段式的第1期數據
@@ -104,7 +104,7 @@ class LoanInfoCalculatorServiceTest {
         assertEquals(29660, paymentSegmentStart.principalForPeriod)
         assertEquals(1832, paymentSegmentStart.interestForPeriod)
         assertEquals(31492, paymentSegmentStart.monthlyPayment)
-        assertEquals(703041, paymentSegmentStart.remainingPrincipal)
+        assertEquals(703041, paymentSegmentStart.principalBalance)
         assertEquals(20055, paymentSegmentStart.totalInterestAccrued)
 
         // 驗證最後一期數據
@@ -113,7 +113,7 @@ class LoanInfoCalculatorServiceTest {
         assertEquals(31425, paymentLast.principalForPeriod)
         assertEquals(79, paymentLast.interestForPeriod)
         assertEquals(31504, paymentLast.monthlyPayment)
-        assertEquals(0, paymentLast.remainingPrincipal)
+        assertEquals(0, paymentLast.principalBalance)
         assertEquals(41342, paymentLast.totalInterestAccrued)
     }
 }
