@@ -1,7 +1,7 @@
 package org.example.loancalculator.service
 
 import org.example.loancalculator.dao.InterestRateDao
-import org.example.loancalculator.dto.InterestRateDto
+import org.example.loancalculator.dto.interestRate.InterestRateDto
 import org.example.loancalculator.entity.InterestRate
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

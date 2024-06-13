@@ -106,9 +106,13 @@ class LoanInfoServiceTest {
 
         val response = restTemplate.getForEntity("/loanInfo/${loanInfo.loanAccount}", LoanDetailsResponse::class.java)
 
-        assertEquals(HttpStatus.OK,response.statusCode)
+        assertEquals(HttpStatus.OK, response.statusCode)
         assertNotNull(response.body)
-//        println("Response body: ${response.body}")
-        assertEquals(1000000,response.body?.principalBalance)
+        println("Response body: ${response.body}")
+        assertEquals(1000000, response.body?.principalBalance)
+
+        // 驗證下次還款日
+        val expectedNextRepaymentDate = loanInfo.startDate.plusMonths(1).withDayOfMonth(loanInfo.repaymentDueDay)
+        assertEquals(expectedNextRepaymentDate,response.body?.nextRepaymentDate)
     }
 }

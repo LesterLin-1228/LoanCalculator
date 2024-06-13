@@ -1,14 +1,15 @@
-package org.example.loancalculator
+package org.example.loancalculator.service
 
 import org.example.loancalculator.model.LoanRequest
 import org.example.loancalculator.model.RatePeriod
-import org.example.loancalculator.service.LoanCalculatorService
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 
 @SpringBootTest
+@ActiveProfiles("test")
 class LoanInfoCalculatorServiceTest {
 
     @Autowired

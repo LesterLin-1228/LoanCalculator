@@ -1,7 +1,10 @@
 package org.example.loancalculator.controller
 
 import jakarta.validation.Valid
+import org.example.loancalculator.dto.EarlyPrincipalRepaymentDto
 import org.example.loancalculator.dto.RepaymentDto
+import org.example.loancalculator.response.EarlyPrincipalRepaymentResponse
+import org.example.loancalculator.response.Response
 import org.example.loancalculator.service.RepaymentService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
@@ -16,6 +19,15 @@ class RepaymentController(@Autowired private val repaymentService: RepaymentServ
 
     @PostMapping
     fun repay(@RequestBody @Valid repaymentDto: RepaymentDto): ResponseEntity<String> {
-        return repaymentService.repay(repaymentDto)
+        val response = repaymentService.repay(repaymentDto)
+        return ResponseEntity(response.message, response.status)
+    }
+
+    @PostMapping("/calculateEarlyPrincipalRepayment")
+    fun calculateEarlyPrincipalRepayment(
+        @RequestBody @Valid earlyPrincipalRepaymentDto: EarlyPrincipalRepaymentDto
+    ): ResponseEntity<Response<EarlyPrincipalRepaymentResponse>> {
+        val response = repaymentService.calculateEarlyPrincipalRepayment(earlyPrincipalRepaymentDto)
+        return ResponseEntity(response, response.status)
     }
 }

@@ -2,8 +2,8 @@ package org.example.loancalculator.response
 
 import java.time.LocalDate
 
-data class LoanDetailsResponse(
+data class EarlyPrincipalRepaymentResponse(
     val principalBalance: Int,
-    val nextRepayment: Int,
+    val nextRepaymentAmount: Int,
     val nextRepaymentDate: LocalDate
 )

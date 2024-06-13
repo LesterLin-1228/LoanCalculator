@@ -1,13 +1,15 @@
 package org.example.loancalculator.service
 
 import org.example.loancalculator.dao.LoanInfoDao
-import org.example.loancalculator.dao.LoanInterestRateDao
 import org.example.loancalculator.dao.RepaymentRecordDao
+import org.example.loancalculator.dto.EarlyPrincipalRepaymentDto
 import org.example.loancalculator.dto.RepaymentDto
+import org.example.loancalculator.entity.LoanInfo
 import org.example.loancalculator.entity.RepaymentRecord
+import org.example.loancalculator.response.EarlyPrincipalRepaymentResponse
+import org.example.loancalculator.response.Response
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -16,22 +18,19 @@ import java.time.LocalDate
 @Service
 class RepaymentService(
     @Autowired private val loanInfoDao: LoanInfoDao,
-    @Autowired private val interestRateService: InterestRateService,
-    @Autowired private val loanInterestRateDao: LoanInterestRateDao,
-    @Autowired private val repaymentRecordDao: RepaymentRecordDao
+    @Autowired private val repaymentRecordDao: RepaymentRecordDao,
+    @Autowired private val loanInfoService: LoanInfoService,
 ) {
 
-    fun repay(repaymentDto: RepaymentDto): ResponseEntity<String> {
-        val loanInfo = loanInfoDao.findByLoanAccount(repaymentDto.loanAccount) ?: return ResponseEntity(
+    fun repay(repaymentDto: RepaymentDto): Response<String> {
+        val loanInfo = loanInfoDao.findByLoanAccount(repaymentDto.loanAccount) ?: return Response(
             "貸款帳號不存在",
             HttpStatus.BAD_REQUEST
         )
 
         // 計算當期利息
-        val baseRate = interestRateService.getLatestInterestRate()?.baseRate ?: throw Exception("查無最新基礎利率")
-        val rateDifference =
-            loanInterestRateDao.findByLoanAccount(loanInfo.loanAccount)?.rateDifference ?: throw Exception("查無利率差")
-        val monthlyRate = (baseRate + rateDifference) / 100 / 12
+        val currentInterestRate = loanInfoService.getCurrentInterestRate(loanInfo.loanAccount)
+        val monthlyRate = currentInterestRate / 100 / 12
         val interestForPeriod = roundToInteger(loanInfo.principalBalance * monthlyRate)
 
         // 當期還款金額
@@ -57,11 +56,52 @@ class RepaymentService(
             repaymentDate = repaymentDto.repaymentDate ?: LocalDate.now(),
             principalRepaid = principalForPeriod,
             interestRepaid = interestForPeriod,
-            currentInterestRate = baseRate + rateDifference
+            currentInterestRate = currentInterestRate
         )
         repaymentRecordDao.save(repaymentRecord)
 
-        return ResponseEntity("還款操作成功", HttpStatus.OK)
+        return Response("還款操作成功", HttpStatus.OK)
+    }
+
+    fun calculateEarlyPrincipalRepayment(
+        earlyPrincipalRepaymentDto: EarlyPrincipalRepaymentDto
+    ): Response<EarlyPrincipalRepaymentResponse> {
+        val loanInfo =
+            loanInfoDao.findByLoanAccount(earlyPrincipalRepaymentDto.loanAccount) ?: throw Exception("貸款帳號不存在")
+
+        // 計算本金餘額
+        val principalBalance = loanInfo.principalBalance - earlyPrincipalRepaymentDto.earlyPrincipalRepayment
+        if (principalBalance < 0) {
+            throw Exception("提前還本金超過本金餘額")
+        }
+        // 創建一個新的 LoanInfo 物件，用於試算，避免影響資料庫
+        val tempLoanInfo = LoanInfo(
+            loanAccount = loanInfo.loanAccount,
+            startDate = loanInfo.startDate,
+            endDate = loanInfo.endDate,
+            repaymentDueDay = loanInfo.repaymentDueDay,
+            principalBalance = principalBalance,
+            loanAmount = loanInfo.loanAmount,
+            loanTerm = loanInfo.loanTerm
+        )
+
+        val loanResponse = loanInfoService.prepareLoanRequest(tempLoanInfo)
+
+        val nextRepaymentInfo = loanResponse.payments.firstOrNull { it.principalBalance < principalBalance }
+            ?: throw Exception("查無下期還款資訊")
+
+        val nextRepaymentDate = loanInfoService.calculateNextRepaymentDate(
+            loanInfo.startDate,
+            nextRepaymentInfo.period,
+            loanInfo.repaymentDueDay
+        )
+
+        val response = EarlyPrincipalRepaymentResponse(
+            principalBalance = principalBalance,
+            nextRepaymentAmount = nextRepaymentInfo.monthlyPayment,
+            nextRepaymentDate = nextRepaymentDate
+        )
+        return Response("試算成功", HttpStatus.OK, response)
     }
 
     private fun roundToInteger(value: Double): Int {

@@ -4,14 +4,15 @@ import org.example.loancalculator.dao.InterestRateDao
 import org.example.loancalculator.dao.LoanInfoDao
 import org.example.loancalculator.dao.LoanInterestRateDao
 import org.example.loancalculator.dao.RepaymentRecordDao
+import org.example.loancalculator.dto.EarlyPrincipalRepaymentDto
 import org.example.loancalculator.dto.RepaymentDto
 import org.example.loancalculator.entity.InterestRate
 import org.example.loancalculator.entity.LoanInfo
 import org.example.loancalculator.entity.LoanInterestRate
+import org.example.loancalculator.response.Response
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-
-import org.junit.jupiter.api.Assertions.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
@@ -98,7 +99,7 @@ class RepaymentServiceTest {
         assertEquals(LocalDate.now(), repaymentRecord.repaymentDate)
         assertTrue(repaymentRecord.principalRepaid > 0)
         assertTrue(repaymentRecord.interestRepaid > 0)
-        assertEquals(2.5,repaymentRecord.currentInterestRate)
+        assertEquals(2.5, repaymentRecord.currentInterestRate)
     }
 
     @Test
@@ -112,5 +113,27 @@ class RepaymentServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals("貸款帳號不存在", response.body)
+    }
+
+    @Test
+    fun `calculateEarlyPrincipalRepayment should return correct calculation`() {
+        val earlyPrincipalRepaymentDto = EarlyPrincipalRepaymentDto(
+            loanAccount = "111",
+            earlyPrincipalRepayment = 30000
+        )
+
+        val response = testRestTemplate.postForEntity(
+            "/repayments/calculateEarlyPrincipalRepayment",
+            earlyPrincipalRepaymentDto,
+            Response::class.java
+        )
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+
+        val responseBody = response.body as Response<*>
+        assertEquals("試算成功", responseBody.message)
+        assertNotNull(responseBody.data)
+        println(responseBody.data)
+
     }
 }

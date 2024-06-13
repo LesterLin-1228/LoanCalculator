@@ -58,44 +58,56 @@ class LoanInfoService(
 
         val loanResponse = prepareLoanRequest(loanInfo)
 
-        // 初始化剩餘本金和下期還款金額
-        var principalBalance = loanInfo.loanAmount
-        var nextRepayment: Int? = null
+        // 初始化剩餘本金
+        val principalBalance = loanInfo.principalBalance
 
-        // 遍歷所有期數的還款資訊
-        for (payment in loanResponse.payments) {
-            if (principalBalance == loanInfo.principalBalance) {
-                nextRepayment = payment.monthlyPayment
-                break
-            }
-            principalBalance -= payment.principalForPeriod
-        }
+        // 查詢下期還款資訊
+        val nextRepaymentInfo =
+            loanResponse.payments.firstOrNull { it.principalBalance < principalBalance }
+                ?: throw Exception("查無下期還款資訊")
+
+        val nextRepaymentDate =
+            calculateNextRepaymentDate(loanInfo.startDate, nextRepaymentInfo.period, loanInfo.repaymentDueDay)
 
         val loanDetailsResponse = LoanDetailsResponse(
-            principalBalance = loanInfo.principalBalance,
-            nextRepayment = nextRepayment ?: throw Exception("查無下期還款金額")
+            principalBalance = principalBalance,
+            nextRepayment = nextRepaymentInfo.monthlyPayment,
+            nextRepaymentDate = nextRepaymentDate
         )
 
         return Response("成功獲取貸款詳情", HttpStatus.OK, loanDetailsResponse)
     }
 
-    private fun prepareLoanRequest(loanInfo: LoanInfo): LoanResponse {
-        // 獲取最新的基礎利率
-        val baseRate = interestRateService.getLatestInterestRate()?.baseRate ?: throw Exception("查無最新基礎利率")
-        // 獲取利率差
-        val rateDifference =
-            loanInterestRateDao.findByLoanAccount(loanInfo.loanAccount)?.rateDifference ?: throw Exception("查無利率差")
+     fun prepareLoanRequest(loanInfo: LoanInfo): LoanResponse {
+
+        val currentInterestRate = getCurrentInterestRate(loanInfo.loanAccount)
 
         val loanRequest = LoanRequest(
             loanAmount = loanInfo.loanAmount / 10000,
             loanPeriod = loanInfo.loanTerm,
             isSingleRate = true,
-            interestRate = baseRate + rateDifference,
+            interestRate = currentInterestRate,
             gracePeriod = 0,
             ratePeriods = null,
             relatedFees = 0
         )
         // 傳回計算後的貸款資訊
         return loanCalculatorService.calculateLoan(loanRequest)
+    }
+
+    // 計算下次還款日
+    fun calculateNextRepaymentDate(startDate: LocalDate, period: Int, repaymentDueDay: Int): LocalDate {
+        val repaymentMonth = startDate.plusMonths(period.toLong())
+        return LocalDate.of(repaymentMonth.year, repaymentMonth.month, repaymentDueDay)
+    }
+
+    // 根據貸款帳號計算當前利率
+    fun getCurrentInterestRate(loanAccount: String): Double {
+        // 獲取最新的基礎利率
+        val baseRate = interestRateService.getLatestInterestRate()?.baseRate ?: throw Exception("查無最新基礎利率")
+        // 獲取利率差
+        val rateDifference =
+            loanInterestRateDao.findByLoanAccount(loanAccount)?.rateDifference ?: throw Exception("查無利率差")
+        return baseRate + rateDifference
     }
 }
