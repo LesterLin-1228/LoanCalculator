@@ -5,7 +5,9 @@ import org.example.loancalculator.dto.interestRate.CreateInterestRateReq
 import org.example.loancalculator.dto.interestRate.InterestRateDto
 import org.example.loancalculator.entity.InterestRate
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
 
 @Service
@@ -17,7 +19,7 @@ class InterestRateService(@Autowired private val interestRateDao: InterestRateDa
 
         // 檢查資料庫是否有重複的日期
         if (interestRateDao.existsByDate(date)) {
-            throw Exception("該日期的基礎利率已存在")
+            throw ResponseStatusException(HttpStatus.CONFLICT, "該日期的基礎利率已存在")
         }
         val interestRate = InterestRate(
             date = date,

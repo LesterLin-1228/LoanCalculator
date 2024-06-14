@@ -1,6 +1,8 @@
 package org.example.loancalculator.service
 
 import org.example.loancalculator.dao.InterestRateDao
+import org.example.loancalculator.dto.error.ErrorResponse
+import org.example.loancalculator.dto.interestRate.CreateInterestRateReq
 import org.example.loancalculator.dto.interestRate.InterestRateDto
 import org.example.loancalculator.entity.InterestRate
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -25,7 +27,7 @@ class InterestRateServiceTest {
     private lateinit var interestRateDao: InterestRateDao
 
     @BeforeEach
-    fun setUp(){
+    fun setUp() {
         // 在每次測試之前清理資料庫
         interestRateDao.deleteAll()
     }
@@ -33,17 +35,18 @@ class InterestRateServiceTest {
     @Test
     fun `createInterestRate should create new interest rate when date is not duplicated`() {
         // Arrange
-        val interestDto = InterestRateDto(
+        val createInterestRateReq = CreateInterestRateReq(
             date = LocalDate.of(2024, 6, 1),
             baseRate = 2.5
         )
 
         // Act
-        val response = restTemplate.postForEntity("/interest-rate", interestDto, String::class.java)
+        val response = restTemplate.postForEntity("/interest-rate", createInterestRateReq, InterestRateDto::class.java)
 
         // Assert
-        assertEquals(HttpStatus.CREATED, response.statusCode)
-        assertEquals("成功建立", response.body)
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals(LocalDate.of(2024, 6, 1), response.body?.date)
+        assertEquals(2.5, response.body?.baseRate)
     }
 
     @Test
@@ -51,15 +54,18 @@ class InterestRateServiceTest {
         val date = LocalDate.of(2024, 6, 1)
         interestRateDao.save(InterestRate(date, baseRate = 2.5))
 
-        val interestRateDto = InterestRateDto(
+        val createInterestRateReq = CreateInterestRateReq(
             date = date,
             baseRate = 2.3
         )
 
-        val response = restTemplate.postForEntity("/interest-rate", interestRateDto, String::class.java)
+        val response = restTemplate.postForEntity("/interest-rate", createInterestRateReq, ErrorResponse::class.java)
 
         assertEquals(HttpStatus.CONFLICT, response.statusCode)
-        assertEquals("該日期的基礎利率已存在", response.body)
+        assertNotNull(response.body)
+        assertEquals("該日期的基礎利率已存在", response.body?.message)
+        assertEquals("/interest-rate", response.body?.path)
+        assertEquals(409, response.body?.status)
     }
 
     @Test
