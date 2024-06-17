@@ -75,10 +75,11 @@ class InterestRateServiceTest {
         interestRateDao.save(InterestRate(olderDate, 2.0))
         interestRateDao.save(InterestRate(latestDate, 2.5))
 
-        val response = restTemplate.getForEntity("/interest-rate/latest", InterestRate::class.java)
+        val response = restTemplate.getForEntity("/interest-rate/latest", InterestRateDto::class.java)
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertNotNull(response.body)
+        println(response.body)
         assertEquals(LocalDate.of(2024, 6, 1), response.body?.date)
         assertEquals(2.5, response.body?.baseRate)
     }

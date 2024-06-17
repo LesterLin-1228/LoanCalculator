@@ -27,10 +27,22 @@ class InterestRateService(@Autowired private val interestRateDao: InterestRateDa
         )
         interestRateDao.save(interestRate)
 
-        return InterestRateDto(date = interestRate.date, baseRate = interestRate.baseRate)
+        val interestRateDto = InterestRateDto(
+            date = interestRate.date,
+            baseRate = interestRate.baseRate
+        )
+
+        return interestRateDto
     }
 
-    fun getLatestInterestRate(): InterestRate? {
-        return interestRateDao.findFirstByOrderByDateDesc()
+    fun getLatestInterestRate(): InterestRateDto {
+        val interestRateDate = interestRateDao.findFirstByOrderByDateDesc()?.date
+        val interestBaseRate = interestRateDao.findFirstByOrderByDateDesc()?.baseRate
+        val interestRateDto = InterestRateDto(
+            date = interestRateDate,
+            baseRate = interestBaseRate
+        )
+
+        return interestRateDto
     }
 }

@@ -1,9 +1,9 @@
-package org.example.loancalculator.dto
+package org.example.loancalculator.dto.repayment
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 
-data class EarlyPrincipalRepaymentDto(
+data class EarlyPrincipalRepayReq(
     @field:NotBlank(message = "貸款帳號不能為空")
     val loanAccount: String,
 

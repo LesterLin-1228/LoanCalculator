@@ -4,12 +4,14 @@ import org.example.loancalculator.dao.InterestRateDao
 import org.example.loancalculator.dao.LoanInfoDao
 import org.example.loancalculator.dao.LoanInterestRateDao
 import org.example.loancalculator.dao.RepaymentRecordDao
-import org.example.loancalculator.dto.EarlyPrincipalRepaymentDto
-import org.example.loancalculator.dto.RepaymentDto
+import org.example.loancalculator.dto.error.ErrorResponse
+import org.example.loancalculator.dto.repayment.EarlyPrincipalRepayDto
+import org.example.loancalculator.dto.repayment.EarlyPrincipalRepayReq
+import org.example.loancalculator.dto.repayment.RepaymentDto
+import org.example.loancalculator.dto.repayment.RepaymentReq
 import org.example.loancalculator.entity.InterestRate
 import org.example.loancalculator.entity.LoanInfo
 import org.example.loancalculator.entity.LoanInterestRate
-import org.example.loancalculator.response.Response
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,10 +43,12 @@ class RepaymentServiceTest {
 
     @BeforeEach
     fun setUp() {
-        loanInfoDao.deleteAll()
-        interestRateDao.deleteAll()
-        loanInterestRateDao.deleteAll()
+        // 因為資料庫的參考完整性約束問題，所以需要先刪除相關的 RepaymentRecord 記錄
+        // 或是一開始就在實體類配置級聯刪除，cascade = [CascadeType.ALL]
         repaymentRecordDao.deleteAll()
+        loanInterestRateDao.deleteAll()
+        interestRateDao.deleteAll()
+        loanInfoDao.deleteAll()
 
         // 初始化測試數據
         val loanInfo = LoanInfo(
@@ -74,25 +78,26 @@ class RepaymentServiceTest {
 
     @Test
     fun `repay should update loan information and create repayment record`() {
-        val repaymentDto = RepaymentDto(
+        val repaymentReq = RepaymentReq(
             loanAccount = "111",
             repaymentAmount = 10000
         )
 
-        val response = testRestTemplate.postForEntity("/repayments", repaymentDto, String::class.java)
+        val response = testRestTemplate.postForEntity("/repayments", repaymentReq, RepaymentDto::class.java)
 
         assertEquals(HttpStatus.OK, response.statusCode)
-        assertEquals("還款操作成功", response.body)
+        assertNotNull(response.body)
+        assertEquals(10000, response.body?.repaymentAmount)
 
         // 驗證 loanInfo 數據是否更新正確
         val updateLoanInfo = loanInfoDao.findByLoanAccount("111")
         assertNotNull(updateLoanInfo)
-        assertEquals(10000, updateLoanInfo?.totalAmountRepaid)
-        assertTrue(updateLoanInfo?.totalInterestRepaid!! > 0)
-        assertTrue(updateLoanInfo.totalPrincipalRepaid > 0)
+        assertEquals(10000, updateLoanInfo!!.totalAmountRepayment)
+        assertTrue(updateLoanInfo.totalInterestRepayment > 0)
+        assertTrue(updateLoanInfo.totalPrincipalRepayment > 0)
 
         // 驗證是否創建了還款記錄
-        val repaymentRecords = repaymentRecordDao.findByLoanAccount("111")
+        val repaymentRecords = repaymentRecordDao.findByLoanInfo(updateLoanInfo)
         assertTrue(repaymentRecords.isNotEmpty())
         val repaymentRecord = repaymentRecords.first()
         assertEquals(10000, repaymentRecord.repaymentAmount)
@@ -103,37 +108,69 @@ class RepaymentServiceTest {
     }
 
     @Test
-    fun `repay should return bad request when loan account does not exist`() {
-        val repaymentDto = RepaymentDto(
+    fun `repay should return not found when loan account does not exist`() {
+        val repaymentReq = RepaymentReq(
             loanAccount = "222",
             repaymentAmount = 10000
         )
 
-        val response = testRestTemplate.postForEntity("/repayments", repaymentDto, String::class.java)
+        val response = testRestTemplate.postForEntity("/repayments", repaymentReq, ErrorResponse::class.java)
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
-        assertEquals("貸款帳號不存在", response.body)
+        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+        assertEquals("貸款帳號不存在", response.body?.message)
     }
 
     @Test
-    fun `calculateEarlyPrincipalRepayment should return correct calculation`() {
-        val earlyPrincipalRepaymentDto = EarlyPrincipalRepaymentDto(
+    fun `calculateEarlyPrincipalRepay should return correct calculation`() {
+        val earlyPrincipalRepayReq = EarlyPrincipalRepayReq(
             loanAccount = "111",
             earlyPrincipalRepayment = 30000
         )
 
         val response = testRestTemplate.postForEntity(
-            "/repayments/calculateEarlyPrincipalRepayment",
-            earlyPrincipalRepaymentDto,
-            Response::class.java
+            "/repayments/calculateEarlyPrincipalRepay",
+            earlyPrincipalRepayReq,
+            EarlyPrincipalRepayDto::class.java
         )
 
         assertEquals(HttpStatus.OK, response.statusCode)
+        assertNotNull(response.body)
+        assertEquals(70000, response.body!!.principalBalance)
+        assertTrue(response.body?.nextRepaymentAmount!! > 0)
+        println(response.body)
+    }
 
-        val responseBody = response.body as Response<*>
-        assertEquals("試算成功", responseBody.message)
-        assertNotNull(responseBody.data)
-        println(responseBody.data)
+    @Test
+    fun `earlyPrincipalRepay should return correct dto and update entity`() {
+        val earlyPrincipalRepayReq = EarlyPrincipalRepayReq(
+            loanAccount = "111",
+            earlyPrincipalRepayment = 30000
+        )
 
+        val response = testRestTemplate.postForEntity(
+            "/repayments/earlyPrincipalRepay",
+            earlyPrincipalRepayReq,
+            EarlyPrincipalRepayDto::class.java
+        )
+
+        assertEquals(70000, response.body?.principalBalance)
+        assertTrue(response.body?.nextRepaymentAmount!! > 0)
+
+        // 驗證 loanInfo 數據是否更新正確
+        val updateLoanInfo = loanInfoDao.findByLoanAccount("111")
+        assertNotNull(updateLoanInfo)
+        assertEquals(70000, updateLoanInfo!!.principalBalance)
+        assertEquals(30000, updateLoanInfo.totalPrincipalRepayment)
+        assertEquals(30000, updateLoanInfo.totalAmountRepayment)
+
+        // 驗證是否創建了還款記錄
+        val repaymentRecords = repaymentRecordDao.findByLoanInfo(updateLoanInfo)
+        assertTrue(repaymentRecords.isNotEmpty())
+        val repaymentRecord = repaymentRecords.first()
+        assertEquals(30000, repaymentRecord.repaymentAmount)
+        assertEquals(30000, repaymentRecord.principalRepaid)
+        assertEquals(0, repaymentRecord.interestRepaid)
+        assertEquals(LocalDate.now(), repaymentRecord.repaymentDate)
+        assertEquals(2.5, repaymentRecord.currentInterestRate)
     }
 }

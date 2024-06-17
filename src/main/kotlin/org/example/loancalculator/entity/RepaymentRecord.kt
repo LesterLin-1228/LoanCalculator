@@ -10,8 +10,9 @@ class RepaymentRecord(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
 
-    @Column(nullable = false)
-    val loanAccount: String,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loan_account", referencedColumnName = "loanAccount")
+    val loanInfo: LoanInfo,
 
     @Comment("還款金額")
     @Column(nullable = false)

@@ -1,8 +1,8 @@
-package org.example.loancalculator.response
+package org.example.loancalculator.dto.loanInfo
 
 import java.time.LocalDate
 
-data class LoanDetailsResponse(
+data class LoanDetailsDto(
     val principalBalance: Int,
     val nextRepayment: Int,
     val nextRepaymentDate: LocalDate

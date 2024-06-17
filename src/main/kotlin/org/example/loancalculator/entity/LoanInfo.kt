@@ -25,15 +25,15 @@ class LoanInfo(
 
     @Comment("已繳總金額(已繳本金+已繳總利息)")
     @Column(nullable = false)
-    var totalAmountRepaid: Int = 0,
+    var totalAmountRepayment: Int = 0,
 
     @Comment("已繳總本金")
     @Column(nullable = false)
-    var totalPrincipalRepaid: Int = 0,
+    var totalPrincipalRepayment: Int = 0,
 
     @Comment("已繳總利息")
     @Column(nullable = false)
-    var totalInterestRepaid: Int = 0,
+    var totalInterestRepayment: Int = 0,
 
     @Comment("貸款總額(單位:元)")
     @Column(nullable = false)

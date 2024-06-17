@@ -1,10 +1,10 @@
-package org.example.loancalculator.dto
+package org.example.loancalculator.dto.repayment
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import java.time.LocalDate
 
-data class RepaymentDto(
+data class RepaymentReq(
     @field:NotBlank(message = "帳號不能為空格或空值")
     val loanAccount: String,
 

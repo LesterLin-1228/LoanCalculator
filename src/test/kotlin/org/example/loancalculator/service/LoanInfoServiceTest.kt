@@ -3,11 +3,13 @@ package org.example.loancalculator.service
 import org.example.loancalculator.dao.InterestRateDao
 import org.example.loancalculator.dao.LoanInfoDao
 import org.example.loancalculator.dao.LoanInterestRateDao
-import org.example.loancalculator.dto.LoanInfoDto
+import org.example.loancalculator.dto.error.ErrorResponse
+import org.example.loancalculator.dto.loanInfo.LoanInfoReq
 import org.example.loancalculator.entity.InterestRate
 import org.example.loancalculator.entity.LoanInfo
 import org.example.loancalculator.entity.LoanInterestRate
-import org.example.loancalculator.response.LoanDetailsResponse
+import org.example.loancalculator.dto.loanInfo.LoanDetailsDto
+import org.example.loancalculator.dto.loanInfo.LoanInfoDto
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -43,17 +45,18 @@ class LoanInfoServiceTest {
 
     @Test
     fun `createLoan should create new loan when account is not duplicated`() {
-        val loanInfoDto = LoanInfoDto(
+        val loanInfoReq = LoanInfoReq(
             loanAccount = "111",
             loanAmount = 1000000,
             loanTerm = 36,
             rateDifference = 0.5
         )
 
-        val response = restTemplate.postForEntity("/loanInfo", loanInfoDto, String::class.java)
+        val response = restTemplate.postForEntity("/loanInfo", loanInfoReq, LoanInfoDto::class.java)
 
-        assertEquals(HttpStatus.CREATED, response.statusCode)
-        assertEquals("成功建立", response.body)
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertNotNull(response.body)
+        println(response.body)
     }
 
     @Test
@@ -69,17 +72,17 @@ class LoanInfoServiceTest {
         )
         loanInfoDao.save(loanInfo)
 
-        val loanInfoDto = LoanInfoDto(
+        val loanInfoReq = LoanInfoReq(
             loanAccount = "111",
             loanAmount = 1000000,
             loanTerm = 36,
             rateDifference = 0.5
         )
 
-        val response = restTemplate.postForEntity("/loanInfo", loanInfoDto, String::class.java)
+        val response = restTemplate.postForEntity("/loanInfo", loanInfoReq, ErrorResponse::class.java)
 
         assertEquals(HttpStatus.CONFLICT, response.statusCode)
-        assertEquals("帳號重複", response.body)
+        assertEquals("帳號已存在", response.body?.message)
     }
 
     @Test
@@ -104,15 +107,15 @@ class LoanInfoServiceTest {
         )
         loanInterestRateDao.save(loanInterestRate)
 
-        val response = restTemplate.getForEntity("/loanInfo/${loanInfo.loanAccount}", LoanDetailsResponse::class.java)
+        val response = restTemplate.getForEntity("/loanInfo/${loanInfo.loanAccount}", LoanDetailsDto::class.java)
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertNotNull(response.body)
-        println("Response body: ${response.body}")
+        println(response.body)
         assertEquals(1000000, response.body?.principalBalance)
 
         // 驗證下次還款日
         val expectedNextRepaymentDate = loanInfo.startDate.plusMonths(1).withDayOfMonth(loanInfo.repaymentDueDay)
-        assertEquals(expectedNextRepaymentDate,response.body?.nextRepaymentDate)
+        assertEquals(expectedNextRepaymentDate, response.body?.nextRepaymentDate)
     }
 }
