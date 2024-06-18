@@ -2,6 +2,7 @@ package org.example.loancalculator.service
 
 import org.example.loancalculator.dao.InterestRateDao
 import org.example.loancalculator.dto.error.ErrorResponse
+import org.example.loancalculator.dto.interestRate.AdjustInterestRateReq
 import org.example.loancalculator.dto.interestRate.CreateInterestRateReq
 import org.example.loancalculator.dto.interestRate.InterestRateDto
 import org.example.loancalculator.entity.InterestRate
@@ -21,7 +22,7 @@ import java.time.LocalDate
 class InterestRateServiceTest {
 
     @Autowired
-    private lateinit var restTemplate: TestRestTemplate
+    private lateinit var testRestTemplate: TestRestTemplate
 
     @Autowired
     private lateinit var interestRateDao: InterestRateDao
@@ -41,7 +42,8 @@ class InterestRateServiceTest {
         )
 
         // Act
-        val response = restTemplate.postForEntity("/interest-rate", createInterestRateReq, InterestRateDto::class.java)
+        val response =
+            testRestTemplate.postForEntity("/interest-rate", createInterestRateReq, InterestRateDto::class.java)
 
         // Assert
         assertEquals(HttpStatus.OK, response.statusCode)
@@ -59,7 +61,8 @@ class InterestRateServiceTest {
             baseRate = 2.3
         )
 
-        val response = restTemplate.postForEntity("/interest-rate", createInterestRateReq, ErrorResponse::class.java)
+        val response =
+            testRestTemplate.postForEntity("/interest-rate", createInterestRateReq, ErrorResponse::class.java)
 
         assertEquals(HttpStatus.CONFLICT, response.statusCode)
         assertNotNull(response.body)
@@ -75,12 +78,50 @@ class InterestRateServiceTest {
         interestRateDao.save(InterestRate(olderDate, 2.0))
         interestRateDao.save(InterestRate(latestDate, 2.5))
 
-        val response = restTemplate.getForEntity("/interest-rate/latest", InterestRateDto::class.java)
+        val response = testRestTemplate.getForEntity("/interest-rate/latest", InterestRateDto::class.java)
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertNotNull(response.body)
         println(response.body)
         assertEquals(LocalDate.of(2024, 6, 1), response.body?.date)
         assertEquals(2.5, response.body?.baseRate)
+    }
+
+    @Test
+    fun `adjustInterestRate should return new interest rate and date`() {
+        val date = LocalDate.of(2024, 6, 1)
+        interestRateDao.save(InterestRate(date, baseRate = 2.5))
+
+        val adjustInterestRateReq = AdjustInterestRateReq(
+            adjustmentRate = 0.5
+        )
+
+        val response = testRestTemplate.postForEntity(
+            "/interest-rate/adjustInterestRate",
+            adjustInterestRateReq,
+            InterestRateDto::class.java
+        )
+
+        assertEquals(LocalDate.now(), response.body?.date)
+        assertEquals(3.0, response.body?.baseRate)
+    }
+
+    @Test
+    fun `adjustInterestRate should return bad request when new interest base rate is negative or zero`() {
+        val date = LocalDate.of(2024, 6, 1)
+        interestRateDao.save(InterestRate(date, baseRate = 2.5))
+
+        val adjustInterestRateReq = AdjustInterestRateReq(
+            adjustmentRate = -2.5
+        )
+
+        val response = testRestTemplate.postForEntity(
+            "/interest-rate/adjustInterestRate",
+            adjustInterestRateReq,
+            ErrorResponse::class.java
+        )
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals("調整後的基礎利率不能為負數或0", response.body?.message)
     }
 }

@@ -1,5 +1,6 @@
 package org.example.loancalculator.controller
 
+import org.example.loancalculator.dto.interestRate.AdjustInterestRateReq
 import org.example.loancalculator.dto.interestRate.CreateInterestRateReq
 import org.example.loancalculator.dto.interestRate.InterestRateDto
 import org.example.loancalculator.service.InterestRateService
@@ -18,5 +19,10 @@ class InterestRateController(@Autowired private val interestRateService: Interes
     @GetMapping("/latest")
     fun getLatestInterestRate(): InterestRateDto {
         return interestRateService.getLatestInterestRate()
+    }
+
+    @PostMapping("/adjustInterestRate")
+    fun adjustInterestRate(@RequestBody adjustInterestRateReq: AdjustInterestRateReq): InterestRateDto {
+        return interestRateService.adjustInterestRate(adjustInterestRateReq)
     }
 }

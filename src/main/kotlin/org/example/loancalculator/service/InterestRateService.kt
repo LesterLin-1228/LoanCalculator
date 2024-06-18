@@ -1,6 +1,7 @@
 package org.example.loancalculator.service
 
 import org.example.loancalculator.dao.InterestRateDao
+import org.example.loancalculator.dto.interestRate.AdjustInterestRateReq
 import org.example.loancalculator.dto.interestRate.CreateInterestRateReq
 import org.example.loancalculator.dto.interestRate.InterestRateDto
 import org.example.loancalculator.entity.InterestRate
@@ -41,6 +42,36 @@ class InterestRateService(@Autowired private val interestRateDao: InterestRateDa
         val interestRateDto = InterestRateDto(
             date = interestRateDate,
             baseRate = interestBaseRate
+        )
+
+        return interestRateDto
+    }
+
+    fun adjustInterestRate(adjustInterestRateReq: AdjustInterestRateReq): InterestRateDto {
+        val date = adjustInterestRateReq.adjustmentDate ?: LocalDate.now()
+        val adjustmentRate = adjustInterestRateReq.adjustmentRate
+
+        val latestInterestRate = interestRateDao.findFirstByOrderByDateDesc() ?: throw ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "查無基礎利率"
+        )
+
+        // 計算新的基礎利率
+        val newBaseRate = latestInterestRate.baseRate + adjustmentRate
+
+        if (newBaseRate <= 0) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "調整後的基礎利率不能為負數或0")
+        }
+
+        val interestRate = InterestRate(
+            date = date,
+            baseRate = newBaseRate
+        )
+        interestRateDao.save(interestRate)
+
+        val interestRateDto = InterestRateDto(
+            date = interestRate.date,
+            baseRate = interestRate.baseRate
         )
 
         return interestRateDto
