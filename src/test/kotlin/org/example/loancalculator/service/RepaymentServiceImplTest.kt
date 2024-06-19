@@ -24,7 +24,7 @@ import java.time.LocalDate
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class RepaymentServiceTest {
+class RepaymentServiceImplTest {
 
     @Autowired
     private lateinit var testRestTemplate: TestRestTemplate
@@ -58,7 +58,10 @@ class RepaymentServiceTest {
             repaymentDueDay = LocalDate.now().dayOfMonth,
             principalBalance = 100000,
             loanAmount = 100000,
-            loanTerm = 36
+            loanTerm = 36,
+            totalAmountRepayment = 0,
+            totalPrincipalRepayment = 0,
+            totalInterestRepayment = 0
         )
         loanInfoDao.save(loanInfo)
 
@@ -80,19 +83,19 @@ class RepaymentServiceTest {
     fun `repay should update loan information and create repayment record`() {
         val repaymentReq = RepaymentReq(
             loanAccount = "111",
-            repaymentAmount = 10000
+            repaymentAmount = 2886
         )
 
         val response = testRestTemplate.postForEntity("/repayments", repaymentReq, RepaymentDto::class.java)
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertNotNull(response.body)
-        assertEquals(10000, response.body?.repaymentAmount)
+        assertEquals(2886, response.body?.repaymentAmount)
 
         // 驗證 loanInfo 數據是否更新正確
         val updateLoanInfo = loanInfoDao.findByLoanAccount("111")
         assertNotNull(updateLoanInfo)
-        assertEquals(10000, updateLoanInfo!!.totalAmountRepayment)
+        assertEquals(2886, updateLoanInfo!!.totalAmountRepayment)
         assertTrue(updateLoanInfo.totalInterestRepayment > 0)
         assertTrue(updateLoanInfo.totalPrincipalRepayment > 0)
 
@@ -100,7 +103,7 @@ class RepaymentServiceTest {
         val repaymentRecords = repaymentRecordDao.findByLoanInfo(updateLoanInfo)
         assertTrue(repaymentRecords.isNotEmpty())
         val repaymentRecord = repaymentRecords.first()
-        assertEquals(10000, repaymentRecord.repaymentAmount)
+        assertEquals(2886, repaymentRecord.repaymentAmount)
         assertEquals(LocalDate.now(), repaymentRecord.repaymentDate)
         assertTrue(repaymentRecord.principalRepaid > 0)
         assertTrue(repaymentRecord.interestRepaid > 0)
@@ -121,6 +124,19 @@ class RepaymentServiceTest {
     }
 
     @Test
+    fun `repay should return bad request when repayment is not equal monthly repayment`() {
+        val repaymentReq = RepaymentReq(
+            loanAccount = "111",
+            repaymentAmount = 2000
+        )
+
+        val response = testRestTemplate.postForEntity("/repayments", repaymentReq, ErrorResponse::class.java)
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals("還款金額必須等於每月應還金額", response.body?.message)
+    }
+
+    @Test
     fun `calculateEarlyPrincipalRepay should return correct calculation`() {
         val earlyPrincipalRepayReq = EarlyPrincipalRepayReq(
             loanAccount = "111",
@@ -134,10 +150,43 @@ class RepaymentServiceTest {
         )
 
         assertEquals(HttpStatus.OK, response.statusCode)
-        assertNotNull(response.body)
-        assertEquals(70000, response.body!!.principalBalance)
+        assertEquals(70000, response.body?.principalBalance)
         assertTrue(response.body?.nextRepaymentAmount!! > 0)
-        println(response.body)
+    }
+
+    @Test
+    fun `calculateEarlyPrincipalRepay should return bad request when early principal repayment is over principal balance`() {
+        val earlyPrincipalRepayReq = EarlyPrincipalRepayReq(
+            loanAccount = "111",
+            earlyPrincipalRepayment = 120000
+        )
+
+        val response = testRestTemplate.postForEntity(
+            "/repayments/calculateEarlyPrincipalRepay",
+            earlyPrincipalRepayReq,
+            ErrorResponse::class.java
+        )
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals("提前還本金超過本金餘額", response.body?.message)
+    }
+
+    @Test
+    fun `calculateEarlyPrincipalRepay should return correct dto`() {
+        val earlyPrincipalRepayReq = EarlyPrincipalRepayReq(
+            loanAccount = "111",
+            earlyPrincipalRepayment = 100000
+        )
+
+        val response = testRestTemplate.postForEntity(
+            "/repayments/calculateEarlyPrincipalRepay",
+            earlyPrincipalRepayReq,
+            EarlyPrincipalRepayDto::class.java
+        )
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals(0, response.body?.principalBalance)
+        assertEquals(0, response.body?.nextRepaymentAmount)
     }
 
     @Test

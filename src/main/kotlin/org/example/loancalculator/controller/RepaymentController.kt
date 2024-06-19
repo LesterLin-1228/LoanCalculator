@@ -5,7 +5,7 @@ import org.example.loancalculator.dto.repayment.EarlyPrincipalRepayReq
 import org.example.loancalculator.dto.repayment.RepaymentReq
 import org.example.loancalculator.dto.repayment.EarlyPrincipalRepayDto
 import org.example.loancalculator.dto.repayment.RepaymentDto
-import org.example.loancalculator.service.RepaymentService
+import org.example.loancalculator.service.impl.RepaymentServiceImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/repayments")
-class RepaymentController(@Autowired private val repaymentService: RepaymentService) {
+class RepaymentController(@Autowired private val repaymentServiceImpl: RepaymentServiceImpl) {
 
     @PostMapping
     fun repay(@RequestBody @Valid repaymentReq: RepaymentReq): RepaymentDto {
-        val repaymentDto = repaymentService.repay(repaymentReq)
+        val repaymentDto = repaymentServiceImpl.repay(repaymentReq)
         return repaymentDto
     }
 
@@ -26,7 +26,7 @@ class RepaymentController(@Autowired private val repaymentService: RepaymentServ
     fun calculateEarlyPrincipalRepay(
         @RequestBody @Valid earlyPrincipalRepayReq: EarlyPrincipalRepayReq
     ): EarlyPrincipalRepayDto {
-        val earlyPrincipalRepayDto = repaymentService.calculateEarlyPrincipalRepay(earlyPrincipalRepayReq)
+        val earlyPrincipalRepayDto = repaymentServiceImpl.calculateEarlyPrincipalRepay(earlyPrincipalRepayReq)
         return earlyPrincipalRepayDto
     }
 
@@ -34,7 +34,7 @@ class RepaymentController(@Autowired private val repaymentService: RepaymentServ
     fun earlyPrincipalRepay(
         @RequestBody @Valid earlyPrincipalRepayReq: EarlyPrincipalRepayReq
     ): EarlyPrincipalRepayDto {
-        val earlyPrincipalRepayDto = repaymentService.earlyPrincipalRepay(earlyPrincipalRepayReq)
+        val earlyPrincipalRepayDto = repaymentServiceImpl.earlyPrincipalRepay(earlyPrincipalRepayReq)
         return earlyPrincipalRepayDto
     }
 }

@@ -9,11 +9,19 @@ class LoanInfo(
     @Id
     val loanAccount: String,
 
+    @Comment("貸款總額(單位:元)")
+    @Column(nullable = false)
+    val loanAmount: Int,
+
+    @Comment("貸款期數(單位:月)")
+    @Column(nullable = false)
+    val loanTerm: Int,
+
     @Column(nullable = false)
     val startDate: LocalDate,
 
     @Column(nullable = false)
-    var endDate: LocalDate,
+    val endDate: LocalDate,
 
     @Comment("每月還款日")
     @Column(nullable = false)
@@ -25,22 +33,14 @@ class LoanInfo(
 
     @Comment("已繳總金額(已繳本金+已繳總利息)")
     @Column(nullable = false)
-    var totalAmountRepayment: Int = 0,
+    var totalAmountRepayment: Int,
 
     @Comment("已繳總本金")
     @Column(nullable = false)
-    var totalPrincipalRepayment: Int = 0,
+    var totalPrincipalRepayment: Int,
 
     @Comment("已繳總利息")
     @Column(nullable = false)
-    var totalInterestRepayment: Int = 0,
-
-    @Comment("貸款總額(單位:元)")
-    @Column(nullable = false)
-    val loanAmount: Int,
-
-    @Comment("貸款期數(單位:月)")
-    @Column(nullable = false)
-    val loanTerm: Int,
+    var totalInterestRepayment: Int,
 )
 

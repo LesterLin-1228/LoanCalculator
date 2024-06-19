@@ -6,7 +6,7 @@ data class LoanInfoDto(
     val loanAccount: String,
     val loanAmount: Int,
     val loanTerm: Int,
-    val rateDifference: Double = 0.5,
+    val rateDifference: Double,
     val startDate:LocalDate,
     val endDate:LocalDate,
     val repaymentDueDay:Int,

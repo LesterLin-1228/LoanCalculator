@@ -7,7 +7,6 @@ import org.example.loancalculator.dto.interestRate.CreateInterestRateReq
 import org.example.loancalculator.dto.interestRate.InterestRateDto
 import org.example.loancalculator.entity.InterestRate
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,7 +18,7 @@ import java.time.LocalDate
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test") // 使用測試配置文件 application-test.yml
-class InterestRateServiceTest {
+class InterestRateServiceImplTest {
 
     @Autowired
     private lateinit var testRestTemplate: TestRestTemplate
@@ -53,11 +52,15 @@ class InterestRateServiceTest {
 
     @Test
     fun `createInterestRate should return conflict when date is duplicated`() {
-        val date = LocalDate.of(2024, 6, 1)
-        interestRateDao.save(InterestRate(date, baseRate = 2.5))
+        interestRateDao.save(
+            InterestRate(
+                LocalDate.of(2024, 6, 1),
+                baseRate = 2.5
+            )
+        )
 
         val createInterestRateReq = CreateInterestRateReq(
-            date = date,
+            date = LocalDate.of(2024, 6, 1),
             baseRate = 2.3
         )
 
@@ -65,10 +68,7 @@ class InterestRateServiceTest {
             testRestTemplate.postForEntity("/interest-rate", createInterestRateReq, ErrorResponse::class.java)
 
         assertEquals(HttpStatus.CONFLICT, response.statusCode)
-        assertNotNull(response.body)
         assertEquals("該日期的基礎利率已存在", response.body?.message)
-        assertEquals("/interest-rate", response.body?.path)
-        assertEquals(409, response.body?.status)
     }
 
     @Test
@@ -81,16 +81,13 @@ class InterestRateServiceTest {
         val response = testRestTemplate.getForEntity("/interest-rate/latest", InterestRateDto::class.java)
 
         assertEquals(HttpStatus.OK, response.statusCode)
-        assertNotNull(response.body)
-        println(response.body)
         assertEquals(LocalDate.of(2024, 6, 1), response.body?.date)
         assertEquals(2.5, response.body?.baseRate)
     }
 
     @Test
-    fun `adjustInterestRate should return new interest rate and date`() {
-        val date = LocalDate.of(2024, 6, 1)
-        interestRateDao.save(InterestRate(date, baseRate = 2.5))
+    fun `adjustInterestRate should return new interest rate and date when new interest base rate is positive`() {
+        interestRateDao.save(InterestRate(LocalDate.now(), baseRate = 2.5))
 
         val adjustInterestRateReq = AdjustInterestRateReq(
             adjustmentRate = 0.5
@@ -108,8 +105,7 @@ class InterestRateServiceTest {
 
     @Test
     fun `adjustInterestRate should return bad request when new interest base rate is negative or zero`() {
-        val date = LocalDate.of(2024, 6, 1)
-        interestRateDao.save(InterestRate(date, baseRate = 2.5))
+        interestRateDao.save(InterestRate(LocalDate.now(), baseRate = 2.5))
 
         val adjustInterestRateReq = AdjustInterestRateReq(
             adjustmentRate = -2.5

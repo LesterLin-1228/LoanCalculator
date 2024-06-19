@@ -1,28 +1,29 @@
 package org.example.loancalculator.controller
 
+import jakarta.validation.Valid
 import org.example.loancalculator.dto.interestRate.AdjustInterestRateReq
 import org.example.loancalculator.dto.interestRate.CreateInterestRateReq
 import org.example.loancalculator.dto.interestRate.InterestRateDto
-import org.example.loancalculator.service.InterestRateService
+import org.example.loancalculator.service.impl.InterestRateServiceImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/interest-rate")
-class InterestRateController(@Autowired private val interestRateService: InterestRateService) {
+class InterestRateController(@Autowired private val interestRateServiceImpl: InterestRateServiceImpl) {
 
     @PostMapping
-    fun createInterestRate(@RequestBody createInterestRateReq: CreateInterestRateReq): InterestRateDto {
-        return interestRateService.createInterestRate(createInterestRateReq)
+    fun createInterestRate(@RequestBody @Valid createInterestRateReq: CreateInterestRateReq): InterestRateDto {
+        return interestRateServiceImpl.createInterestRate(createInterestRateReq)
     }
 
     @GetMapping("/latest")
     fun getLatestInterestRate(): InterestRateDto {
-        return interestRateService.getLatestInterestRate()
+        return interestRateServiceImpl.getLatestInterestRate()
     }
 
     @PostMapping("/adjustInterestRate")
-    fun adjustInterestRate(@RequestBody adjustInterestRateReq: AdjustInterestRateReq): InterestRateDto {
-        return interestRateService.adjustInterestRate(adjustInterestRateReq)
+    fun adjustInterestRate(@RequestBody @Valid adjustInterestRateReq: AdjustInterestRateReq): InterestRateDto {
+        return interestRateServiceImpl.adjustInterestRate(adjustInterestRateReq)
     }
 }

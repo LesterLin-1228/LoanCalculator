@@ -1,8 +1,8 @@
 package org.example.loancalculator.dto.interestRate
 
-import java.time.LocalDate
+import jakarta.validation.constraints.NotNull
 
 data class AdjustInterestRateReq(
-    val adjustmentDate: LocalDate? = null,
+    @field:NotNull(message = "調整利率不能為空值")
     val adjustmentRate: Double
 )

@@ -1,17 +1,26 @@
 package org.example.loancalculator.service
 
+import org.example.loancalculator.dao.LoanInterestRateDao
+import org.example.loancalculator.entity.LoanInfo
 import org.example.loancalculator.model.LoanRequest
 import org.example.loancalculator.model.LoanResponse
 import org.example.loancalculator.model.Payment
+import org.example.loancalculator.service.impl.InterestRateServiceImpl
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.pow
 
 @Service
-class LoanCalculatorService {
+class LoanCalculatorService(
+    @Autowired private val interestRateServiceImpl: InterestRateServiceImpl,
+    @Autowired private val loanInterestRateDao: LoanInterestRateDao
+) {
 
+    // 計算貸款詳情
     fun calculateLoan(request: LoanRequest): LoanResponse {
         // 將貸款金額轉換為元
         val loanAmountInDollars = request.loanAmount * 10000
@@ -144,7 +153,7 @@ class LoanCalculatorService {
     }
 
     // 計算每月還款金額
-    private fun calculateMonthlyPayment(
+    fun calculateMonthlyPayment(
         loanAmount: Int,
         monthlyRate: Double,
         periods: Int
@@ -193,7 +202,40 @@ class LoanCalculatorService {
         return BigDecimal(apr * 100).setScale(2, RoundingMode.HALF_UP).toDouble()
     }
 
-    private fun roundToInteger(value: Double): Int {
+    fun roundToInteger(value: Double): Int {
         return BigDecimal(value).setScale(0, RoundingMode.HALF_UP).toInt()
+    }
+
+    fun prepareLoanRequest(loanInfo: LoanInfo): LoanResponse {
+
+        val currentInterestRate = getCurrentInterestRate(loanInfo.loanAccount)
+
+        val loanRequest = LoanRequest(
+            loanAmount = loanInfo.loanAmount / 10000,
+            loanPeriod = loanInfo.loanTerm,
+            isSingleRate = true,
+            interestRate = currentInterestRate,
+            gracePeriod = 0,
+            ratePeriods = null,
+            relatedFees = 0
+        )
+        // 傳回計算後的貸款資訊
+        return calculateLoan(loanRequest)
+    }
+
+    // 計算下次還款日
+    fun calculateNextRepaymentDate(startDate: LocalDate, period: Int, repaymentDueDay: Int): LocalDate {
+        val repaymentMonth = startDate.plusMonths(period.toLong())
+        return LocalDate.of(repaymentMonth.year, repaymentMonth.month, repaymentDueDay)
+    }
+
+    // 根據貸款帳號計算當前利率
+    fun getCurrentInterestRate(loanAccount: String): Double {
+        // 獲取最新的基礎利率
+        val baseRate = interestRateServiceImpl.getLatestInterestRate().baseRate
+        // 獲取利率差
+        val rateDifference =
+            loanInterestRateDao.findByLoanAccount(loanAccount)?.rateDifference ?: throw Exception("查無利率差")
+        return baseRate + rateDifference
     }
 }
