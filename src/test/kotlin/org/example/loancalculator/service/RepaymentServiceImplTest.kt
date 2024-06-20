@@ -86,7 +86,7 @@ class RepaymentServiceImplTest {
             repaymentAmount = 2886
         )
 
-        val response = testRestTemplate.postForEntity("/repayments", repaymentReq, RepaymentDto::class.java)
+        val response = testRestTemplate.postForEntity("/repayments/repay", repaymentReq, RepaymentDto::class.java)
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertNotNull(response.body)
@@ -117,7 +117,7 @@ class RepaymentServiceImplTest {
             repaymentAmount = 10000
         )
 
-        val response = testRestTemplate.postForEntity("/repayments", repaymentReq, ErrorResponse::class.java)
+        val response = testRestTemplate.postForEntity("/repayments/repay", repaymentReq, ErrorResponse::class.java)
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
         assertEquals("貸款帳號不存在", response.body?.message)
@@ -130,7 +130,7 @@ class RepaymentServiceImplTest {
             repaymentAmount = 2000
         )
 
-        val response = testRestTemplate.postForEntity("/repayments", repaymentReq, ErrorResponse::class.java)
+        val response = testRestTemplate.postForEntity("/repayments/repay", repaymentReq, ErrorResponse::class.java)
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals("還款金額必須等於每月應還金額", response.body?.message)
@@ -172,7 +172,7 @@ class RepaymentServiceImplTest {
     }
 
     @Test
-    fun `calculateEarlyPrincipalRepay should return correct dto`() {
+    fun `calculateEarlyPrincipalRepay should return correct dto when loan settle up`() {
         val earlyPrincipalRepayReq = EarlyPrincipalRepayReq(
             loanAccount = "111",
             earlyPrincipalRepayment = 100000

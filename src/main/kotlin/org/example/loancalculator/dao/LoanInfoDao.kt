@@ -9,14 +9,14 @@ interface LoanInfoDao : JpaRepository<LoanInfo, String> {
     fun findByLoanAccount(loanAccount: String): LoanInfo?
 
     // 取得總放款金額
-    @Query("select sum(loanAmount) from LoanInfo")
+    @Query("select sum(l.loanAmount) from LoanInfo l")
     fun getTotalLoanAmount(): Int
 
     // 取得總還款金額
-    @Query("select sum(totalAmountRepayment) from LoanInfo")
+    @Query("select sum(l.totalAmountRepayment) from LoanInfo l")
     fun getTotalRepaidAmount(): Int
 
     // 取得總利息收入
-    @Query("SELECT SUM(totalInterestRepayment) FROM LoanInfo")
+    @Query("SELECT SUM(l.totalInterestRepayment) FROM LoanInfo l")
     fun getTotalInterestReceived(): Int
 }

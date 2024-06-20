@@ -16,25 +16,22 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/repayments")
 class RepaymentController(@Autowired private val repaymentServiceImpl: RepaymentServiceImpl) {
 
-    @PostMapping
+    @PostMapping("/repay")
     fun repay(@RequestBody @Valid repaymentReq: RepaymentReq): RepaymentDto {
-        val repaymentDto = repaymentServiceImpl.repay(repaymentReq)
-        return repaymentDto
+        return repaymentServiceImpl.repay(repaymentReq)
     }
 
     @PostMapping("/calculateEarlyPrincipalRepay")
     fun calculateEarlyPrincipalRepay(
         @RequestBody @Valid earlyPrincipalRepayReq: EarlyPrincipalRepayReq
     ): EarlyPrincipalRepayDto {
-        val earlyPrincipalRepayDto = repaymentServiceImpl.calculateEarlyPrincipalRepay(earlyPrincipalRepayReq)
-        return earlyPrincipalRepayDto
+        return repaymentServiceImpl.calculateEarlyPrincipalRepay(earlyPrincipalRepayReq)
     }
 
     @PostMapping("/earlyPrincipalRepay")
     fun earlyPrincipalRepay(
         @RequestBody @Valid earlyPrincipalRepayReq: EarlyPrincipalRepayReq
     ): EarlyPrincipalRepayDto {
-        val earlyPrincipalRepayDto = repaymentServiceImpl.earlyPrincipalRepay(earlyPrincipalRepayReq)
-        return earlyPrincipalRepayDto
+        return repaymentServiceImpl.earlyPrincipalRepay(earlyPrincipalRepayReq)
     }
 }

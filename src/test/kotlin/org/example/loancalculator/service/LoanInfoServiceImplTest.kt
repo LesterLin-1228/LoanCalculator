@@ -3,6 +3,7 @@ package org.example.loancalculator.service
 import org.example.loancalculator.dao.InterestRateDao
 import org.example.loancalculator.dao.LoanInfoDao
 import org.example.loancalculator.dao.LoanInterestRateDao
+import org.example.loancalculator.dao.RepaymentRecordDao
 import org.example.loancalculator.dto.error.ErrorResponse
 import org.example.loancalculator.dto.loanInfo.LoanDetailsDto
 import org.example.loancalculator.dto.loanInfo.LoanInfoDto
@@ -11,6 +12,7 @@ import org.example.loancalculator.dto.loanInfo.LoanStatisticsDto
 import org.example.loancalculator.entity.InterestRate
 import org.example.loancalculator.entity.LoanInfo
 import org.example.loancalculator.entity.LoanInterestRate
+import org.example.loancalculator.entity.RepaymentRecord
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,7 +22,6 @@ import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDate
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -28,7 +29,7 @@ import kotlin.test.assertTrue
 class LoanInfoServiceImplTest {
 
     @Autowired
-    private lateinit var loanCalculatorService: LoanCalculatorService
+    private lateinit var repaymentRecordDao: RepaymentRecordDao
 
     @Autowired
     private lateinit var interestRateDao: InterestRateDao
@@ -44,6 +45,7 @@ class LoanInfoServiceImplTest {
 
     @BeforeEach
     fun setUp() {
+        repaymentRecordDao.deleteAll()
         loanInterestRateDao.deleteAll()
         loanInfoDao.deleteAll()
     }
@@ -97,8 +99,8 @@ class LoanInfoServiceImplTest {
     fun `getLoanDetails should return loan details`() {
         val loanInfo = LoanInfo(
             loanAccount = "111",
-            startDate = LocalDate.now(),
-            endDate = LocalDate.now().plusMonths(36),
+            startDate = LocalDate.now().minusMonths(1),
+            endDate = LocalDate.now().plusMonths(35),
             repaymentDueDay = LocalDate.now().dayOfMonth,
             principalBalance = 90000,
             loanAmount = 100000,
@@ -118,21 +120,33 @@ class LoanInfoServiceImplTest {
         )
         loanInterestRateDao.save(loanInterestRate)
 
+        // 增加一個還款記錄
+        repaymentRecordDao.save(
+            RepaymentRecord(
+                loanInfo = loanInfo,
+                repaymentDate = LocalDate.now(),
+                repaymentAmount = 10000,
+                principalRepaid = 9000,
+                interestRepaid = 1000,
+                currentInterestRate = 2.5
+            )
+        )
+
         val response = testRestTemplate.getForEntity("/loanInfo/${loanInfo.loanAccount}", LoanDetailsDto::class.java)
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertEquals(90000, response.body?.principalBalance)
         assertTrue(response.body?.nextRepayment!! > 0)
 
-        // 根據剩餘本金查找對應期數
-        val loanResponse = loanCalculatorService.prepareLoanRequest(loanInfo)
-        val nextRepaymentInfo = loanResponse.payments.firstOrNull { it.principalBalance < loanInfo.principalBalance }
-        // 確保查找到的下一期還款資訊不為 null，否則測試失敗並顯示訊息
-        assertNotNull(nextRepaymentInfo,"查無下期還款資訊")
+        // 查找最近還款日
+        val latestRepaymentDate = repaymentRecordDao.findLatestRepaymentDateByLoanAccount(loanInfo.loanAccount)
 
-        // 驗證下次還款日
-        val nextPaymentPeriod = nextRepaymentInfo.period
-        val expectedNextRepaymentDate = loanInfo.startDate.plusMonths(nextPaymentPeriod.toLong()).withDayOfMonth(loanInfo.repaymentDueDay)
+        // 計算下次還款日
+        val expectedNextRepaymentDate = if (latestRepaymentDate != null) {
+            latestRepaymentDate.plusMonths(1)
+        } else {
+            loanInfo.startDate.plusMonths(1)
+        }
 
         assertEquals(expectedNextRepaymentDate, response.body?.nextRepaymentDate)
         println(response.body)

@@ -2,6 +2,7 @@ package org.example.loancalculator.service.impl
 
 import org.example.loancalculator.dao.LoanInfoDao
 import org.example.loancalculator.dao.LoanInterestRateDao
+import org.example.loancalculator.dao.RepaymentRecordDao
 import org.example.loancalculator.dto.loanInfo.LoanDetailsDto
 import org.example.loancalculator.dto.loanInfo.LoanInfoDto
 import org.example.loancalculator.dto.loanInfo.LoanInfoReq
@@ -20,6 +21,7 @@ class LoanInfoServiceImpl(
     @Autowired private val loanInfoDao: LoanInfoDao,
     @Autowired private val loanInterestRateDao: LoanInterestRateDao,
     @Autowired private val loanCalculatorService: LoanCalculatorService,
+    @Autowired private val repaymentRecordDao: RepaymentRecordDao,
 ) : LoanInfoService {
 
     override fun createLoan(loanInfoReq: LoanInfoReq): LoanInfoDto {
@@ -27,18 +29,20 @@ class LoanInfoServiceImpl(
         if (existingLoanInfo != null) {
             throw ResponseStatusException(HttpStatus.CONFLICT, "帳號已存在")
         } else {
+            val endDate = loanInfoReq.startDate.plusMonths(loanInfoReq.loanTerm.toLong())
+
             // 儲存貸款帳號
             val loanInfo = LoanInfo(
                 loanAccount = loanInfoReq.loanAccount,
                 startDate = loanInfoReq.startDate,
-                endDate = loanInfoReq.endDate,
+                endDate = endDate,
                 repaymentDueDay = loanInfoReq.startDate.dayOfMonth,
                 principalBalance = loanInfoReq.loanAmount,
                 loanAmount = loanInfoReq.loanAmount,
                 loanTerm = loanInfoReq.loanTerm,
-                totalAmountRepayment = loanInfoReq.totalAmountRepayment,
-                totalPrincipalRepayment = loanInfoReq.totalPrincipalRepayment,
-                totalInterestRepayment = loanInfoReq.totalInterestRepayment
+                totalAmountRepayment = 0,
+                totalPrincipalRepayment = 0,
+                totalInterestRepayment = 0
             )
             val saveLoan = loanInfoDao.save(loanInfo)
 
@@ -57,7 +61,7 @@ class LoanInfoServiceImpl(
                 loanTerm = loanInfoReq.loanTerm,
                 rateDifference = loanInfoReq.rateDifference,
                 startDate = loanInfoReq.startDate,
-                endDate = loanInfoReq.endDate,
+                endDate = endDate,
                 repaymentDueDay = loanInfoReq.startDate.dayOfMonth
             )
 
@@ -81,10 +85,12 @@ class LoanInfoServiceImpl(
             loanResponse.payments.firstOrNull { it.principalBalance < principalBalance }
                 ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "查無下期還款資訊")
 
+        val lastRepaymentDate = repaymentRecordDao.findLatestRepaymentDateByLoanAccount(loanAccount)
+
         val nextRepaymentDate =
             loanCalculatorService.calculateNextRepaymentDate(
                 loanInfo.startDate,
-                nextRepaymentInfo.period,
+                lastRepaymentDate,
                 loanInfo.repaymentDueDay
             )
 

@@ -224,9 +224,17 @@ class LoanCalculatorService(
     }
 
     // 計算下次還款日
-    fun calculateNextRepaymentDate(startDate: LocalDate, period: Int, repaymentDueDay: Int): LocalDate {
-        val repaymentMonth = startDate.plusMonths(period.toLong())
-        return LocalDate.of(repaymentMonth.year, repaymentMonth.month, repaymentDueDay)
+    fun calculateNextRepaymentDate(
+        startDate: LocalDate,
+        lastRepaymentDate: LocalDate?,
+        repaymentDueDay: Int
+    ): LocalDate {
+        val nextRepaymentDate = if (lastRepaymentDate != null) {
+            lastRepaymentDate.plusMonths(1)
+        }else {
+            startDate.plusMonths(1)
+        }
+        return LocalDate.of(nextRepaymentDate.year, nextRepaymentDate.month, repaymentDueDay)
     }
 
     // 根據貸款帳號計算當前利率
