@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
+import java.math.BigDecimal
 
 @Service
 class InterestRateServiceImpl(@Autowired private val interestRateDao: InterestRateDao) : InterestRateService {
@@ -57,16 +58,19 @@ class InterestRateServiceImpl(@Autowired private val interestRateDao: InterestRa
             "查無基礎利率"
         )
 
-        // 計算新的基礎利率
-        val newBaseRate = latestInterestRate.baseRate + adjustInterestRateReq.adjustmentRate
+        // 使用 BigDecimal 計算避免精準度丟失
+        val baseRate = BigDecimal.valueOf(latestInterestRate.baseRate)
+        val adjustmentRate = BigDecimal.valueOf(adjustInterestRateReq.adjustmentRate)
 
-        if (newBaseRate <= 0) {
+        val newBaseRate = baseRate.add(adjustmentRate)
+
+        if (newBaseRate <= BigDecimal.ZERO) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "調整後的基礎利率不能為負數或0")
         }
 
         val interestRate = InterestRate(
             date = latestInterestRate.date,
-            baseRate = newBaseRate
+            baseRate = newBaseRate.toDouble()
         )
         interestRateDao.save(interestRate)
 

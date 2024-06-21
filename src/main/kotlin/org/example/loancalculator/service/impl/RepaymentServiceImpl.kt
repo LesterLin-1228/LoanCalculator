@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
-import java.time.LocalDate
 
 @Service
 class RepaymentServiceImpl(
@@ -29,11 +28,16 @@ class RepaymentServiceImpl(
             "貸款帳號不存在"
         )
         // 計算當期利息
-        val currentInterestRate = loanCalculatorService.getCurrentInterestRate(loanInfo.loanAccount)
-        val monthlyRate = currentInterestRate / 100 / 12
-        val interestForPeriod = loanCalculatorService.roundToInteger(loanInfo.principalBalance * monthlyRate)
+        // 年利率
+        val annualRate = loanCalculatorService.getCurrentInterestRate(loanInfo.loanAccount)
+        // 月利率
+        val monthlyRate = annualRate / 100 / 12
+        // 月還款
         val monthlyPayment =
-            loanCalculatorService.calculateMonthlyPayment(loanInfo.loanAmount, monthlyRate, loanInfo.loanTerm)
+            loanCalculatorService.calculateMonthlyPayment(loanInfo.principalBalance, monthlyRate, loanInfo.loanTerm)
+        // 當期利息
+        val interestForPeriod = loanCalculatorService.roundToInteger(loanInfo.principalBalance * monthlyRate)
+        // 當期本金
         val principalForPeriod = monthlyPayment - interestForPeriod
 
         if (repaymentReq.repaymentAmount != monthlyPayment) {
@@ -57,7 +61,7 @@ class RepaymentServiceImpl(
             repaymentDate = repaymentReq.repaymentDate,
             principalRepaid = principalForPeriod,
             interestRepaid = interestForPeriod,
-            currentInterestRate = currentInterestRate
+            currentInterestRate = annualRate
         )
         repaymentRecordDao.save(repaymentRecord)
 
@@ -68,7 +72,7 @@ class RepaymentServiceImpl(
             repaymentDate = repaymentReq.repaymentDate,
             principalRepaid = principalForPeriod,
             interestRepaid = interestForPeriod,
-            currentInterestRate = currentInterestRate
+            currentInterestRate = annualRate
         )
 
         return repaymentDto
@@ -113,15 +117,18 @@ class RepaymentServiceImpl(
             totalInterestRepayment = loanInfo.totalInterestRepayment
         )
 
-        val loanResponse = loanCalculatorService.prepareLoanRequest(tempLoanInfo)
+        val monthlyRate = loanCalculatorService.getCurrentInterestRate(tempLoanInfo.loanAccount) / 100 / 12
 
-        val nextRepaymentInfo = loanResponse.payments.firstOrNull { it.principalBalance < newPrincipalBalance }
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "查無下期還款資訊")
-        println(nextRepaymentInfo)
+        val nextRepayment =
+            loanCalculatorService.calculateMonthlyPayment(
+                tempLoanInfo.principalBalance,
+                monthlyRate,
+                tempLoanInfo.loanTerm
+            )
 
         val earlyPrincipalRepayDto = EarlyPrincipalRepayDto(
             principalBalance = newPrincipalBalance,
-            nextRepaymentAmount = nextRepaymentInfo.monthlyPayment,
+            nextRepaymentAmount = nextRepayment,
         )
         return earlyPrincipalRepayDto
     }
@@ -141,20 +148,6 @@ class RepaymentServiceImpl(
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "提前還本金超過本金餘額")
         }
 
-        if (newPrincipalBalance == 0) {
-            return EarlyPrincipalRepayDto(
-                principalBalance = 0,
-                nextRepaymentAmount = 0
-            )
-        }
-
-        // 更新 LoanInfo
-        loanInfo.principalBalance = newPrincipalBalance
-        loanInfo.totalPrincipalRepayment += earlyPrincipalRepayReq.earlyPrincipalRepayment
-        loanInfo.totalAmountRepayment += earlyPrincipalRepayReq.earlyPrincipalRepayment
-        loanInfoDao.save(loanInfo)
-
-        // 記錄提前還款資訊
         val currentInterestRate = loanCalculatorService.getCurrentInterestRate(loanInfo.loanAccount)
         val repaymentRecord = RepaymentRecord(
             loanInfo = loanInfo,
@@ -162,20 +155,25 @@ class RepaymentServiceImpl(
             principalRepaid = earlyPrincipalRepayReq.earlyPrincipalRepayment,
             interestRepaid = 0,
             currentInterestRate = currentInterestRate,
-            repaymentDate = LocalDate.now()
+            repaymentDate = earlyPrincipalRepayReq.earlyPrincipalRepaymentDate
         )
         repaymentRecordDao.save(repaymentRecord)
 
-        val loanResponse = loanCalculatorService.prepareLoanRequest(loanInfo)
+        loanInfo.principalBalance = newPrincipalBalance
+        loanInfo.totalPrincipalRepayment += earlyPrincipalRepayReq.earlyPrincipalRepayment
+        loanInfo.totalAmountRepayment += earlyPrincipalRepayReq.earlyPrincipalRepayment
+        loanInfoDao.save(loanInfo)
 
-        val nextRepaymentInfo = loanResponse.payments.firstOrNull { it.principalBalance < loanInfo.principalBalance }
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "查無下期還款資訊")
+        val nextRepaymentAmount = if (newPrincipalBalance == 0) {
+            0
+        } else {
+            val monthlyRate = currentInterestRate / 100 / 12
+            loanCalculatorService.calculateMonthlyPayment(newPrincipalBalance, monthlyRate, loanInfo.loanTerm)
+        }
 
-        val earlyPrincipalRepayDto = EarlyPrincipalRepayDto(
-            principalBalance = loanInfo.principalBalance,
-            nextRepaymentAmount = nextRepaymentInfo.monthlyPayment
+        return EarlyPrincipalRepayDto(
+            principalBalance = newPrincipalBalance,
+            nextRepaymentAmount = nextRepaymentAmount
         )
-
-        return earlyPrincipalRepayDto
     }
 }

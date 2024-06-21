@@ -75,15 +75,11 @@ class LoanInfoServiceImpl(
             "貸款帳號不存在"
         )
 
-        val loanResponse = loanCalculatorService.prepareLoanRequest(loanInfo)
-
-        // 初始化剩餘本金
         val principalBalance = loanInfo.principalBalance
+        val monthlyRate = loanCalculatorService.getCurrentInterestRate(loanAccount) / 100 / 12
 
-        // 查詢下期還款資訊
-        val nextRepaymentInfo =
-            loanResponse.payments.firstOrNull { it.principalBalance < principalBalance }
-                ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "查無下期還款資訊")
+        val nextRepayment =
+            loanCalculatorService.calculateMonthlyPayment(principalBalance, monthlyRate, loanInfo.loanTerm)
 
         val lastRepaymentDate = repaymentRecordDao.findLatestRepaymentDateByLoanAccount(loanAccount)
 
@@ -96,7 +92,7 @@ class LoanInfoServiceImpl(
 
         val loanDetailsDto = LoanDetailsDto(
             principalBalance = principalBalance,
-            nextRepayment = nextRepaymentInfo.monthlyPayment,
+            nextRepayment = nextRepayment,
             nextRepaymentDate = nextRepaymentDate
         )
 

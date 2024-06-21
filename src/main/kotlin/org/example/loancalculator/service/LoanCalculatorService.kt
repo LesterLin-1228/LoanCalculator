@@ -1,7 +1,6 @@
 package org.example.loancalculator.service
 
 import org.example.loancalculator.dao.LoanInterestRateDao
-import org.example.loancalculator.entity.LoanInfo
 import org.example.loancalculator.model.LoanRequest
 import org.example.loancalculator.model.LoanResponse
 import org.example.loancalculator.model.Payment
@@ -206,23 +205,6 @@ class LoanCalculatorService(
         return BigDecimal(value).setScale(0, RoundingMode.HALF_UP).toInt()
     }
 
-    fun prepareLoanRequest(loanInfo: LoanInfo): LoanResponse {
-
-        val currentInterestRate = getCurrentInterestRate(loanInfo.loanAccount)
-
-        val loanRequest = LoanRequest(
-            loanAmount = loanInfo.loanAmount / 10000,
-            loanPeriod = loanInfo.loanTerm,
-            isSingleRate = true,
-            interestRate = currentInterestRate,
-            gracePeriod = 0,
-            ratePeriods = null,
-            relatedFees = 0
-        )
-        // 傳回計算後的貸款資訊
-        return calculateLoan(loanRequest)
-    }
-
     // 計算下次還款日
     fun calculateNextRepaymentDate(
         startDate: LocalDate,
@@ -231,7 +213,7 @@ class LoanCalculatorService(
     ): LocalDate {
         val nextRepaymentDate = if (lastRepaymentDate != null) {
             lastRepaymentDate.plusMonths(1)
-        }else {
+        } else {
             startDate.plusMonths(1)
         }
         return LocalDate.of(nextRepaymentDate.year, nextRepaymentDate.month, repaymentDueDay)
