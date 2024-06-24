@@ -221,7 +221,7 @@ class LoanCalculatorService(
 
     // 根據貸款帳號計算當前利率
     fun getCurrentInterestRate(loanAccount: String): Double {
-        // 獲取最新的基礎利率
+        // 獲取當前的基礎利率
         val baseRate = interestRateServiceImpl.getLatestInterestRate().baseRate
         // 獲取利率差
         val rateDifference =

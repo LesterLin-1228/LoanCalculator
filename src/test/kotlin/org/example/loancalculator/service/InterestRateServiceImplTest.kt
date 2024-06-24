@@ -74,14 +74,14 @@ class InterestRateServiceImplTest {
     @Test
     fun `getLatestInterestRate should return latest base rate`() {
         val olderDate = LocalDate.of(2024, 5, 1)
-        val latestDate = LocalDate.of(2024, 6, 1)
+        val latestDate = LocalDate.now()
         interestRateDao.save(InterestRate(olderDate, 2.0))
         interestRateDao.save(InterestRate(latestDate, 2.5))
 
         val response = testRestTemplate.getForEntity("/interest-rate/latest", InterestRateDto::class.java)
 
         assertEquals(HttpStatus.OK, response.statusCode)
-        assertEquals(LocalDate.of(2024, 6, 1), response.body?.date)
+        assertEquals(latestDate, response.body?.date)
         assertEquals(2.5, response.body?.baseRate)
     }
 
@@ -90,7 +90,8 @@ class InterestRateServiceImplTest {
         interestRateDao.save(InterestRate(LocalDate.now(), baseRate = 2.5))
 
         val adjustInterestRateReq = AdjustInterestRateReq(
-            adjustmentRate = 0.5
+            adjustmentRate = 0.5,
+            effectiveDate = LocalDate.of(2024,7,15)
         )
 
         val response = testRestTemplate.postForEntity(
@@ -99,7 +100,7 @@ class InterestRateServiceImplTest {
             InterestRateDto::class.java
         )
 
-        assertEquals(LocalDate.now(), response.body?.date)
+        assertEquals(LocalDate.of(2024,7,15), response.body?.date)
         assertEquals(3.0, response.body?.baseRate)
     }
 
@@ -108,7 +109,8 @@ class InterestRateServiceImplTest {
         interestRateDao.save(InterestRate(LocalDate.now(), baseRate = 2.5))
 
         val adjustInterestRateReq = AdjustInterestRateReq(
-            adjustmentRate = -2.5
+            adjustmentRate = -2.5,
+            effectiveDate = LocalDate.of(2024,7,15)
         )
 
         val response = testRestTemplate.postForEntity(

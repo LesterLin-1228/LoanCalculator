@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
 import java.math.BigDecimal
+import java.time.LocalDate
 
 @Service
 class InterestRateServiceImpl(@Autowired private val interestRateDao: InterestRateDao) : InterestRateService {
@@ -39,10 +40,22 @@ class InterestRateServiceImpl(@Autowired private val interestRateDao: InterestRa
     }
 
     override fun getLatestInterestRate(): InterestRateDto {
-        val latestInterestRate = interestRateDao.findFirstByOrderByDateDesc() ?: throw ResponseStatusException(
-            HttpStatus.NOT_FOUND,
-            "查無基礎利率"
-        )
+        // 先查詢當天的基礎利率
+        val interestRateToday = interestRateDao.findByDate(LocalDate.now())
+
+        // 如果當天的基礎利率存在，返回當天的基礎利率
+        if (interestRateToday != null) {
+            return InterestRateDto(
+                date = interestRateToday.date,
+                baseRate = interestRateToday.baseRate
+            )
+        }
+
+        val latestInterestRate =
+            interestRateDao.findFirstByDateBeforeOrderByDateDesc(LocalDate.now()) ?: throw ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "查無基礎利率"
+            )
 
         val interestRateDto = InterestRateDto(
             date = latestInterestRate.date,
@@ -53,15 +66,17 @@ class InterestRateServiceImpl(@Autowired private val interestRateDao: InterestRa
     }
 
     override fun adjustInterestRate(adjustInterestRateReq: AdjustInterestRateReq): InterestRateDto {
-        val latestInterestRate = interestRateDao.findFirstByOrderByDateDesc() ?: throw ResponseStatusException(
-            HttpStatus.NOT_FOUND,
-            "查無基礎利率"
-        )
+        val latestInterestRate =
+            interestRateDao.findByDate(adjustInterestRateReq.effectiveDate)
+                ?: interestRateDao.findFirstByDateBeforeOrderByDateDesc(adjustInterestRateReq.effectiveDate)
+                ?: throw ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "查無基礎利率"
+                )
 
         // 使用 BigDecimal 計算避免精準度丟失
         val baseRate = BigDecimal.valueOf(latestInterestRate.baseRate)
         val adjustmentRate = BigDecimal.valueOf(adjustInterestRateReq.adjustmentRate)
-
         val newBaseRate = baseRate.add(adjustmentRate)
 
         if (newBaseRate <= BigDecimal.ZERO) {
@@ -69,7 +84,7 @@ class InterestRateServiceImpl(@Autowired private val interestRateDao: InterestRa
         }
 
         val interestRate = InterestRate(
-            date = latestInterestRate.date,
+            date = adjustInterestRateReq.effectiveDate,
             baseRate = newBaseRate.toDouble()
         )
         interestRateDao.save(interestRate)

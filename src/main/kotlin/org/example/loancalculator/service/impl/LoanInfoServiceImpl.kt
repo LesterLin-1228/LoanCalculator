@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
+import java.time.LocalDate
 
 @Service
 class LoanInfoServiceImpl(
@@ -83,12 +84,16 @@ class LoanInfoServiceImpl(
 
         val lastRepaymentDate = repaymentRecordDao.findLatestRepaymentDateByLoanAccount(loanAccount)
 
-        val nextRepaymentDate =
+        var nextRepaymentDate: LocalDate? =
             loanCalculatorService.calculateNextRepaymentDate(
                 loanInfo.startDate,
                 lastRepaymentDate,
                 loanInfo.repaymentDueDay
             )
+
+        if (principalBalance == 0) {
+            nextRepaymentDate = null
+        }
 
         val loanDetailsDto = LoanDetailsDto(
             principalBalance = principalBalance,
